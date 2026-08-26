@@ -7,6 +7,8 @@ import { WorldSerializer } from './serialization/WorldSerializer';
 class App {
   private renderer!: ThreeRenderer;
   private currentEngine!: RoadWorldEngine;
+  private lastTime: number = performance.now();
+  public isSimulationPaused: boolean = false;
 
   constructor() {
     this.init();
@@ -25,7 +27,23 @@ class App {
 
     // Charger le scénario par défaut (TEST-01)
     this.loadScenario(0);
+
+    // Boucle d'animation temps réel des feux tricolores et de la simulation
+    this.animateLoop();
   }
+
+  private animateLoop = (): void => {
+    requestAnimationFrame(this.animateLoop);
+
+    const now = performance.now();
+    const dt = Math.min((now - this.lastTime) / 1000, 0.1);
+    this.lastTime = now;
+
+    if (!this.isSimulationPaused && this.currentEngine) {
+      this.currentEngine.update(dt);
+      this.renderer.updateTrafficLights(this.currentEngine.trafficLights);
+    }
+  };
 
   private setupScenarioList(): void {
     const listEl = document.getElementById('scenario-list');
@@ -65,7 +83,11 @@ class App {
 
     // Instancier le moteur et construire la scène
     this.currentEngine = scenario.createEngine();
-    this.renderer.renderWorld(this.currentEngine.network, this.currentEngine.regulation);
+    this.renderer.renderWorld(
+      this.currentEngine.network,
+      this.currentEngine.regulation,
+      this.currentEngine.trafficLights
+    );
     this.renderer.resetCamera();
 
     this.updateStats();
@@ -128,7 +150,7 @@ class App {
         setVal(next);
         if (next) btn.classList.add('active');
         else btn.classList.remove('active');
-        this.renderer.debugRenderer.update(this.currentEngine.network);
+        this.renderer.debugRenderer.update(this.currentEngine.network, this.currentEngine.regulation);
       });
     };
 
@@ -202,7 +224,11 @@ class App {
           const jsonStr = textarea.value.trim();
           if (!jsonStr) return;
           this.currentEngine = WorldSerializer.deserialize(jsonStr);
-          this.renderer.renderWorld(this.currentEngine.network);
+          this.renderer.renderWorld(
+            this.currentEngine.network,
+            this.currentEngine.regulation,
+            this.currentEngine.trafficLights
+          );
           this.updateStats();
           this.updateValidationReport();
           modal.style.display = 'none';

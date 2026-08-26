@@ -5,20 +5,23 @@ import { LaneBuilder } from './LaneBuilder';
 import { SidewalkBuilder } from './SidewalkBuilder';
 import { MarkingBuilder } from './MarkingBuilder';
 import { TrafficRegulationEngine } from './regulation/TrafficRegulationEngine';
+import { TrafficLightEngine } from './traffic-lights/TrafficLightEngine';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
   public regulation: TrafficRegulationEngine;
+  public trafficLights: TrafficLightEngine;
   public seed: number;
 
   constructor(seed: number = 482915) {
     this.seed = seed;
     this.network = new RoadNetwork();
     this.regulation = new TrafficRegulationEngine(this.network);
+    this.trafficLights = new TrafficLightEngine(this.network);
   }
 
   /**
-   * Construit l'ensemble des systèmes géométriques, topologiques et réglementaires du réseau routier
+   * Construit l'ensemble des systèmes géométriques, topologiques, réglementaires et lumineux
    */
   build(): void {
     // 1. Géométrie des routes (rubans & polygones d'emprise)
@@ -38,6 +41,13 @@ export class RoadWorldEngine {
 
     // 6. Moteur de réglementation & attribution des priorités
     this.regulation.build();
+
+    // 7. Feux tricolores dynamiques
+    this.trafficLights.build();
+  }
+
+  update(deltaSeconds: number): void {
+    this.trafficLights.update(deltaSeconds);
   }
 
   getStats() {
@@ -52,6 +62,7 @@ export class RoadWorldEngine {
       stopLinesCount: this.network.stopLines.size,
       arrowsCount: this.network.directionalArrows.size,
       rulesCount: this.regulation.priorityRules.size,
+      trafficLightsCount: this.trafficLights.poles.size,
     };
   }
 }

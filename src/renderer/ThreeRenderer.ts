@@ -2,12 +2,15 @@ import * as THREE from 'three';
 import { RoadNetwork } from '../engine/RoadNetwork';
 import { MeshGenerators } from './MeshGenerators';
 import { DebugRenderer } from './DebugRenderer';
+import { TrafficLightRenderer } from './TrafficLightRenderer';
+import { TrafficLightEngine } from '../engine/traffic-lights/TrafficLightEngine';
 
 export class ThreeRenderer {
   public scene: THREE.Scene;
   public camera: THREE.PerspectiveCamera;
   public renderer: THREE.WebGLRenderer;
   public debugRenderer: DebugRenderer;
+  public trafficLightRenderer: TrafficLightRenderer;
 
   private roadGroup: THREE.Group = new THREE.Group();
   private intersectionGroup: THREE.Group = new THREE.Group();
@@ -20,7 +23,7 @@ export class ThreeRenderer {
   private markingMat: THREE.MeshBasicMaterial;
   private groundMat: THREE.MeshStandardMaterial;
 
-  // Contrôle caméra orbital simple intégré (sans dépendance externe OrbitControls)
+  // Contrôle caméra orbital
   private isMouseDown = false;
   private isRightMouseDown = false;
   private prevMousePos = { x: 0, y: 0 };
@@ -89,6 +92,9 @@ export class ThreeRenderer {
     this.debugRenderer = new DebugRenderer();
     this.scene.add(this.debugRenderer.group);
 
+    this.trafficLightRenderer = new TrafficLightRenderer();
+    this.scene.add(this.trafficLightRenderer.group);
+
     this.initControls(container);
     this.updateCameraPosition();
 
@@ -119,12 +125,10 @@ export class ThreeRenderer {
       this.prevMousePos = { x: e.clientX, y: e.clientY };
 
       if (this.isMouseDown) {
-        // Rotation orbitale
         this.spherical.theta -= dx * 0.008;
         this.spherical.phi = Math.max(0.05, Math.min(Math.PI / 2 - 0.05, this.spherical.phi - dy * 0.008));
         this.updateCameraPosition();
       } else if (this.isRightMouseDown) {
-        // Pan
         const factor = this.spherical.radius * 0.001;
         const forward = new THREE.Vector3().subVectors(this.cameraTarget, this.camera.position);
         forward.y = 0;
@@ -171,11 +175,11 @@ export class ThreeRenderer {
     this.cameraTarget.copy(center);
     this.spherical.radius = distance;
     this.spherical.theta = 0;
-    this.spherical.phi = 0.05; // quasi zénithal
+    this.spherical.phi = 0.05;
     this.updateCameraPosition();
   }
 
-  renderWorld(network: RoadNetwork, regulation?: any): void {
+  renderWorld(network: RoadNetwork, regulation?: any, trafficLights?: TrafficLightEngine): void {
     // 1. Vider les anciens maillages
     this.clearGroup(this.roadGroup);
     this.clearGroup(this.intersectionGroup);
@@ -254,8 +258,19 @@ export class ThreeRenderer {
       this.markingGroup.add(mesh);
     }
 
-    // 6. Debug
+    // 6. Feux tricolores dynamiques 3D
+    if (trafficLights) {
+      this.trafficLightRenderer.buildPoles(trafficLights.poles);
+    } else {
+      this.trafficLightRenderer.clear();
+    }
+
+    // 7. Debug
     this.debugRenderer.update(network, regulation);
+  }
+
+  updateTrafficLights(trafficLights: TrafficLightEngine): void {
+    this.trafficLightRenderer.updateLights(trafficLights.poles);
   }
 
   private clearGroup(group: THREE.Group): void {

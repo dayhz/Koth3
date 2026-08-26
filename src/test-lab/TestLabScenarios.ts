@@ -250,4 +250,27 @@ export const TEST_SCENARIOS: TestScenario[] = [
       return engine;
     },
   },
+  {
+    id: 'TEST-11',
+    name: 'Carrefour Urbain à Feux Tricolores Synchronisés',
+    category: 'Signalisation Lumineuse V0.5',
+    description: 'Carrefour à 4 branches régulé par feux tricolores dynamiques 3D alternant phases Vert, Jaune et Tous-Rouges.',
+    expectedResult: 'Poteaux 3D avec optiques lumineuses émissives qui alternent en temps réel.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(111);
+      const center = engine.network.createNode(new Vector2D(0, 0), 'four_way', 'CENTER_TL');
+      const w = engine.network.createNode(new Vector2D(-60, 0), 'dead_end', 'W');
+      const e = engine.network.createNode(new Vector2D(60, 0), 'dead_end', 'E');
+      const n = engine.network.createNode(new Vector2D(0, 60), 'dead_end', 'N');
+      const s = engine.network.createNode(new Vector2D(0, -60), 'dead_end', 'S');
+
+      engine.network.createRoad(w.id, center.id, new LinearCurve(w.position, center.position), fourLaneAvenueProfile, 'R_AVE_W');
+      engine.network.createRoad(center.id, e.id, new LinearCurve(center.position, e.position), fourLaneAvenueProfile, 'R_AVE_E');
+      engine.network.createRoad(n.id, center.id, new LinearCurve(n.position, center.position), defaultResidentialProfile, 'R_RES_N');
+      engine.network.createRoad(center.id, s.id, new LinearCurve(center.position, s.position), defaultResidentialProfile, 'R_RES_S');
+
+      engine.build();
+      return engine;
+    },
+  },
 ];
