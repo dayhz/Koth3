@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoadNetwork } from '../engine/RoadNetwork';
+import { TrafficRegulationEngine } from '../engine/regulation/TrafficRegulationEngine';
 
 export class DebugRenderer {
   public group: THREE.Group = new THREE.Group();
@@ -8,8 +9,9 @@ export class DebugRenderer {
   public showLanes: boolean = true;
   public showNodes: boolean = true;
   public showIntersections: boolean = true;
+  public showPriorityBadges: boolean = true;
 
-  update(network: RoadNetwork): void {
+  update(network: RoadNetwork, regulation?: TrafficRegulationEngine): void {
     // Nettoyer les anciens objets
     while (this.group.children.length > 0) {
       const obj = this.group.children[0];
@@ -97,6 +99,26 @@ export class DebugRenderer {
           const line = new THREE.Line(geom, mat);
           this.group.add(line);
         }
+      }
+    }
+
+    // 5. Badges de priorité 3D au-dessus des carrefours
+    if (this.showPriorityBadges && regulation) {
+      for (const [nodeId, rule] of regulation.priorityRules.entries()) {
+        const node = network.nodes.get(nodeId);
+        if (!node) continue;
+
+        let badgeColor = 0x3388ff; // Bleu: Priorité à droite
+        if (rule.regime === 'stop') badgeColor = 0xff2222; // Rouge: STOP
+        else if (rule.regime === 'yield') badgeColor = 0xffaa00; // Orange: Cédez
+        else if (rule.regime === 'priority_road') badgeColor = 0xffdd00; // Jaune: Axe prioritaire
+        else if (rule.regime === 'roundabout') badgeColor = 0x00ddaa; // Cyan: Giratoire
+
+        const prismGeom = new THREE.CylinderGeometry(1.2, 1.2, 0.4, 6);
+        const mat = new THREE.MeshBasicMaterial({ color: badgeColor });
+        const badge = new THREE.Mesh(prismGeom, mat);
+        badge.position.set(node.position.x, 2.5, node.position.y);
+        this.group.add(badge);
       }
     }
   }

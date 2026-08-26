@@ -175,7 +175,7 @@ export class ThreeRenderer {
     this.updateCameraPosition();
   }
 
-  renderWorld(network: RoadNetwork): void {
+  renderWorld(network: RoadNetwork, regulation?: any): void {
     // 1. Vider les anciens maillages
     this.clearGroup(this.roadGroup);
     this.clearGroup(this.intersectionGroup);
@@ -255,7 +255,7 @@ export class ThreeRenderer {
     }
 
     // 6. Debug
-    this.debugRenderer.update(network);
+    this.debugRenderer.update(network, regulation);
   }
 
   private clearGroup(group: THREE.Group): void {

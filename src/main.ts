@@ -65,7 +65,7 @@ class App {
 
     // Instancier le moteur et construire la scène
     this.currentEngine = scenario.createEngine();
-    this.renderer.renderWorld(this.currentEngine.network);
+    this.renderer.renderWorld(this.currentEngine.network, this.currentEngine.regulation);
     this.renderer.resetCamera();
 
     this.updateStats();

@@ -4,18 +4,21 @@ import { IntersectionBuilder } from './IntersectionBuilder';
 import { LaneBuilder } from './LaneBuilder';
 import { SidewalkBuilder } from './SidewalkBuilder';
 import { MarkingBuilder } from './MarkingBuilder';
+import { TrafficRegulationEngine } from './regulation/TrafficRegulationEngine';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
+  public regulation: TrafficRegulationEngine;
   public seed: number;
 
   constructor(seed: number = 482915) {
     this.seed = seed;
     this.network = new RoadNetwork();
+    this.regulation = new TrafficRegulationEngine(this.network);
   }
 
   /**
-   * Construit l'ensemble des systèmes géométriques et topologiques du réseau routier
+   * Construit l'ensemble des systèmes géométriques, topologiques et réglementaires du réseau routier
    */
   build(): void {
     // 1. Géométrie des routes (rubans & polygones d'emprise)
@@ -32,6 +35,9 @@ export class RoadWorldEngine {
 
     // 5. Marquages au sol
     MarkingBuilder.buildMarkings(this.network);
+
+    // 6. Moteur de réglementation & attribution des priorités
+    this.regulation.build();
   }
 
   getStats() {
@@ -45,6 +51,7 @@ export class RoadWorldEngine {
       crosswalksCount: this.network.crosswalks.size,
       stopLinesCount: this.network.stopLines.size,
       arrowsCount: this.network.directionalArrows.size,
+      rulesCount: this.regulation.priorityRules.size,
     };
   }
 }
