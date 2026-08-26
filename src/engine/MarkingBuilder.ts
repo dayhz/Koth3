@@ -109,12 +109,14 @@ export class MarkingBuilder {
 
             const isRoundabout = node.type === 'roundabout';
             const stopLineId = `SL_${stopLineCounter++}`;
+            const stopLineElevation = road.centerline.getElevation(tEntry);
             network.stopLines.set(stopLineId, {
               id: stopLineId,
               laneId: lane.id,
               intersectionId: node.id,
               p1: p1.toJSON(),
               p2: p2.toJSON(),
+              elevation: stopLineElevation,
               width: isRoundabout ? 0.30 : 0.50,
               isDashed: isRoundabout,
             });
@@ -124,6 +126,7 @@ export class MarkingBuilder {
             const deltaT = road.length > 0 ? (arrowDistMeters / road.length) * (arm.isStartOfRoad ? 1 : -1) : 0;
             const tArrow = Math.max(0.05, Math.min(0.95, tEntry + deltaT));
             const arrowPos = lane.centerline.getPoint(tArrow);
+            const arrowElevation = road.centerline.getElevation(tArrow);
             const arrowDir = lane.direction === 'forward' ? tangent : tangent.multiplyScalar(-1);
 
             // Déduire le mouvement à partir des connexions de voie de ce carrefour
@@ -140,6 +143,7 @@ export class MarkingBuilder {
               id: arrowId,
               laneId: lane.id,
               position: arrowPos.toJSON(),
+              elevation: arrowElevation,
               direction: arrowDir.toJSON(),
               movement,
             });
@@ -162,6 +166,7 @@ export class MarkingBuilder {
     const tCenter = Math.max(0.05, Math.min(0.95, tBoundary + deltaT));
 
     const center = road.centerline.getPoint(tCenter);
+    const centerElevation = road.centerline.getElevation(tCenter);
     const tangent = road.centerline.getTangent(tCenter);
     const normal = tangent.normalLeft();
     const halfWidth = road.halfWidth;
@@ -190,6 +195,7 @@ export class MarkingBuilder {
       id,
       parentRoadId: road.id,
       center: center.toJSON(),
+      elevation: centerElevation,
       direction: tangent.toJSON(),
       width: crosswalkWidth,
       length: crosswalkLength,

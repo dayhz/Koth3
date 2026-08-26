@@ -1,16 +1,25 @@
 import { IVector2D, Vector2D } from '../math/Vector2D';
+import { Vector3D } from '../math/Vector3D';
 
 export interface CurveFrame {
   point: Vector2D;
+  point3D?: Vector3D;
   tangent: Vector2D;
   normal: Vector2D;
+  elevation: number;
+  slopePercent: number;
   t: number;
   distance: number;
 }
 
 export interface ICurve {
   type: 'linear' | 'bezier_cubic' | 'arc';
+  startElevation: number;
+  endElevation: number;
   getPoint(t: number): Vector2D;
+  getPoint3D(t: number): Vector3D;
+  getElevation(t: number): number;
+  getSlopePercent(t: number): number;
   getTangent(t: number): Vector2D;
   getNormal(t: number): Vector2D;
   getLength(): number;
@@ -26,14 +35,36 @@ export class LinearCurve implements ICurve {
   readonly type = 'linear' as const;
   public start: Vector2D;
   public end: Vector2D;
+  public startElevation: number = 0;
+  public endElevation: number = 0;
 
-  constructor(start: IVector2D, end: IVector2D) {
+  constructor(start: IVector2D, end: IVector2D, startElevation: number = 0, endElevation: number = 0) {
     this.start = Vector2D.from(start);
     this.end = Vector2D.from(end);
+    this.startElevation = startElevation;
+    this.endElevation = endElevation;
   }
 
   getPoint(t: number): Vector2D {
     return this.start.lerp(this.end, t);
+  }
+
+  getElevation(t: number): number {
+    const s = 3 * t * t - 2 * t * t * t;
+    return this.startElevation + (this.endElevation - this.startElevation) * s;
+  }
+
+  getSlopePercent(t: number): number {
+    const len = this.getLength();
+    if (len === 0) return 0;
+    const ds_dt = 6 * t * (1 - t);
+    const dz_dt = (this.endElevation - this.startElevation) * ds_dt;
+    return (dz_dt / len) * 100;
+  }
+
+  getPoint3D(t: number): Vector3D {
+    const p = this.getPoint(t);
+    return new Vector3D(p.x, this.getElevation(t), p.y);
   }
 
   getTangent(_t: number): Vector2D {
@@ -68,10 +99,17 @@ export class LinearCurve implements ICurve {
     for (let i = 0; i < count; i++) {
       const alpha = i / (count - 1);
       const t = tStart + alpha * (tEnd - tStart);
+      const pt = this.getPoint(t);
+      const elev = this.getElevation(t);
+      const slope = this.getSlopePercent(t);
+
       frames.push({
-        point: this.getPoint(t),
+        point: pt,
+        point3D: new Vector3D(pt.x, elev, pt.y),
         tangent,
         normal,
+        elevation: elev,
+        slopePercent: slope,
         t,
         distance: t * len,
       });
@@ -80,7 +118,7 @@ export class LinearCurve implements ICurve {
   }
 
   clone(): LinearCurve {
-    return new LinearCurve(this.start, this.end);
+    return new LinearCurve(this.start, this.end, this.startElevation, this.endElevation);
   }
 }
 
@@ -93,14 +131,25 @@ export class CubicBezierCurve implements ICurve {
   public p1: Vector2D;
   public p2: Vector2D;
   public p3: Vector2D;
+  public startElevation: number = 0;
+  public endElevation: number = 0;
 
   private _cachedLength: number | null = null;
 
-  constructor(p0: IVector2D, p1: IVector2D, p2: IVector2D, p3: IVector2D) {
+  constructor(
+    p0: IVector2D,
+    p1: IVector2D,
+    p2: IVector2D,
+    p3: IVector2D,
+    startElevation: number = 0,
+    endElevation: number = 0
+  ) {
     this.p0 = Vector2D.from(p0);
     this.p1 = Vector2D.from(p1);
     this.p2 = Vector2D.from(p2);
     this.p3 = Vector2D.from(p3);
+    this.startElevation = startElevation;
+    this.endElevation = endElevation;
   }
 
   getPoint(t: number): Vector2D {
@@ -114,6 +163,24 @@ export class CubicBezierCurve implements ICurve {
       mt3 * this.p0.x + 3 * mt2 * t * this.p1.x + 3 * mt * t2 * this.p2.x + t3 * this.p3.x,
       mt3 * this.p0.y + 3 * mt2 * t * this.p1.y + 3 * mt * t2 * this.p2.y + t3 * this.p3.y
     );
+  }
+
+  getElevation(t: number): number {
+    const s = 3 * t * t - 2 * t * t * t;
+    return this.startElevation + (this.endElevation - this.startElevation) * s;
+  }
+
+  getSlopePercent(t: number): number {
+    const len = this.getLength();
+    if (len === 0) return 0;
+    const ds_dt = 6 * t * (1 - t);
+    const dz_dt = (this.endElevation - this.startElevation) * ds_dt;
+    return (dz_dt / len) * 100;
+  }
+
+  getPoint3D(t: number): Vector3D {
+    const p = this.getPoint(t);
+    return new Vector3D(p.x, this.getElevation(t), p.y);
   }
 
   getDerivative(t: number): Vector2D {
@@ -179,10 +246,16 @@ export class CubicBezierCurve implements ICurve {
       }
       prevPt = point;
 
+      const elev = this.getElevation(t);
+      const slope = this.getSlopePercent(t);
+
       frames.push({
         point,
+        point3D: new Vector3D(point.x, elev, point.y),
         tangent: this.getTangent(t),
         normal: this.getNormal(t),
+        elevation: elev,
+        slopePercent: slope,
         t,
         distance: totalDist,
       });
@@ -191,7 +264,7 @@ export class CubicBezierCurve implements ICurve {
   }
 
   clone(): CubicBezierCurve {
-    return new CubicBezierCurve(this.p0, this.p1, this.p2, this.p3);
+    return new CubicBezierCurve(this.p0, this.p1, this.p2, this.p3, this.startElevation, this.endElevation);
   }
 }
 
@@ -205,19 +278,25 @@ export class ArcCurve implements ICurve {
   public startAngle: number;
   public endAngle: number;
   public clockwise: boolean;
+  public startElevation: number = 0;
+  public endElevation: number = 0;
 
   constructor(
     center: IVector2D,
     radius: number,
     startAngle: number,
     endAngle: number,
-    clockwise: boolean = false
+    clockwise: boolean = false,
+    startElevation: number = 0,
+    endElevation: number = 0
   ) {
     this.center = Vector2D.from(center);
     this.radius = radius;
     this.startAngle = startAngle;
     this.endAngle = endAngle;
     this.clockwise = clockwise;
+    this.startElevation = startElevation;
+    this.endElevation = endElevation;
   }
 
   private getAngleAt(t: number): number {
@@ -233,6 +312,24 @@ export class ArcCurve implements ICurve {
       this.center.x + this.radius * Math.cos(angle),
       this.center.y + this.radius * Math.sin(angle)
     );
+  }
+
+  getElevation(t: number): number {
+    const s = 3 * t * t - 2 * t * t * t;
+    return this.startElevation + (this.endElevation - this.startElevation) * s;
+  }
+
+  getSlopePercent(t: number): number {
+    const len = this.getLength();
+    if (len === 0) return 0;
+    const ds_dt = 6 * t * (1 - t);
+    const dz_dt = (this.endElevation - this.startElevation) * ds_dt;
+    return (dz_dt / len) * 100;
+  }
+
+  getPoint3D(t: number): Vector3D {
+    const p = this.getPoint(t);
+    return new Vector3D(p.x, this.getElevation(t), p.y);
   }
 
   getTangent(t: number): Vector2D {
@@ -268,10 +365,17 @@ export class ArcCurve implements ICurve {
     for (let i = 0; i < count; i++) {
       const alpha = i / (count - 1);
       const t = tStart + alpha * (tEnd - tStart);
+      const pt = this.getPoint(t);
+      const elev = this.getElevation(t);
+      const slope = this.getSlopePercent(t);
+
       frames.push({
-        point: this.getPoint(t),
+        point: pt,
+        point3D: new Vector3D(pt.x, elev, pt.y),
         tangent: this.getTangent(t),
         normal: this.getNormal(t),
+        elevation: elev,
+        slopePercent: slope,
         t,
         distance: t * len,
       });
@@ -280,6 +384,14 @@ export class ArcCurve implements ICurve {
   }
 
   clone(): ArcCurve {
-    return new ArcCurve(this.center, this.radius, this.startAngle, this.endAngle, this.clockwise);
+    return new ArcCurve(
+      this.center,
+      this.radius,
+      this.startAngle,
+      this.endAngle,
+      this.clockwise,
+      this.startElevation,
+      this.endElevation
+    );
   }
 }

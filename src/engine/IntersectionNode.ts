@@ -1,4 +1,5 @@
 import { Vector2D } from '../core/math/Vector2D';
+import { Vector3D } from '../core/math/Vector3D';
 import { Polygon2D } from '../core/polygon/Polygon2D';
 import { CurbReturnData, IntersectionArm, IntersectionType, RoundaboutConfig, SplitterIsland } from './types';
 
@@ -11,13 +12,21 @@ export class IntersectionNode {
   public curbReturns: CurbReturnData[] = [];
   public splitterIslands: SplitterIsland[] = [];
   public curbRadius: number = 5.0; // Rayon de congé standard (5 mètres)
+  public elevation: number = 0;    // Altitude altimétrique Z en mètres
 
   constructor(
     public readonly id: string,
     public position: Vector2D,
     public type: IntersectionType = 'dead_end',
-    public name: string = `Intersection ${id}`
-  ) {}
+    public name: string = `Intersection ${id}`,
+    elevation: number = 0
+  ) {
+    this.elevation = elevation;
+  }
+
+  get position3D(): Vector3D {
+    return new Vector3D(this.position.x, this.elevation, this.position.y);
+  }
 
   addConnectedRoad(roadId: string, isStartOfRoad: boolean, angleRadians: number, roadWidth: number): void {
     if (!this.connectedRoadIds.includes(roadId)) {
@@ -54,6 +63,7 @@ export class IntersectionNode {
     return {
       id: this.id,
       position: this.position.toJSON(),
+      elevation: this.elevation,
       type: this.type,
       name: this.name,
       curbRadius: this.curbRadius,

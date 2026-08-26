@@ -27,11 +27,11 @@ export class TrafficLightEngine {
         // 1. Point d'arrêt et direction de circulation vers le carrefour
         const tBoundary = arm.isStartOfRoad ? road.tStart : road.tEnd;
         const stopPoint = road.centerline.getPoint(tBoundary);
+        const baseElevation = road.centerline.getElevation(tBoundary);
         const tangent = road.centerline.getTangent(tBoundary);
 
         // Vecteur unitaire du trafic approchant vers le carrefour
         const approachDir = arm.isStartOfRoad ? tangent.multiplyScalar(-1) : tangent;
-        // Vecteur pointant vers la droite du conducteur
         const rightNormal = approachDir.normalRight();
 
         // 2. Position du mât sur le trottoir droit
@@ -48,6 +48,7 @@ export class TrafficLightEngine {
           intersectionId: node.id,
           roadId: road.id,
           position: polePos.toJSON(),
+          elevation: baseElevation,
           heading,
           height: 5.5,
           armLength: road.halfWidth * 0.85 + 0.5,

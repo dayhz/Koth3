@@ -273,4 +273,48 @@ export const TEST_SCENARIOS: TestScenario[] = [
       return engine;
     },
   },
+  {
+    id: 'TEST-12',
+    name: 'Route de Montagne 3D avec Pente et Dévers (Col 8%)',
+    category: 'Élévation & Relief V0.6',
+    description: 'Route en S sinueuse grimpant de 0m à 15m d’altitude avec pente longitudinale et dévers de virage automatique.',
+    expectedResult: 'Profil altimétrique 3D fluide, montée continue et dévers transversaux en virage.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(112);
+      const start = engine.network.createNode(new Vector2D(-60, -20), 'dead_end', 'VALLEE', 0);
+      const end = engine.network.createNode(new Vector2D(60, 20), 'dead_end', 'SOMMET', 15);
+
+      const sCurve = new CubicBezierCurve(
+        start.position,
+        new Vector2D(-20, -40),
+        new Vector2D(20, 40),
+        end.position
+      );
+
+      engine.network.createRoad(start.id, end.id, sCurve, defaultResidentialProfile, 'R_COL');
+      engine.build();
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-13',
+    name: 'Viaduc Routier Surélevé (Carrefour Étagé)',
+    category: 'Élévation & Relief V0.6',
+    description: 'Carrefour en T surélevé à 10m de hauteur avec rampes d’accès descendantes vers le niveau du sol (0m).',
+    expectedResult: 'Jonction routière suspendue avec déclivité contrôlée sur les rampes.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(113);
+      const centerBridge = engine.network.createNode(new Vector2D(0, 0), 't_junction', 'PONT_HAUT', 10);
+      const rWest = engine.network.createNode(new Vector2D(-60, 0), 'dead_end', 'RAMPE_OUEST', 0);
+      const rEast = engine.network.createNode(new Vector2D(60, 0), 'dead_end', 'RAMPE_EST', 0);
+      const rNorth = engine.network.createNode(new Vector2D(0, 50), 'dead_end', 'RAMPE_NORD', 0);
+
+      engine.network.createRoad(rWest.id, centerBridge.id, new LinearCurve(rWest.position, centerBridge.position), defaultResidentialProfile, 'R_RAMPE_W');
+      engine.network.createRoad(centerBridge.id, rEast.id, new LinearCurve(centerBridge.position, rEast.position), defaultResidentialProfile, 'R_RAMPE_E');
+      engine.network.createRoad(rNorth.id, centerBridge.id, new LinearCurve(rNorth.position, centerBridge.position), defaultResidentialProfile, 'R_RAMPE_N');
+
+      engine.build();
+      return engine;
+    },
+  },
 ];

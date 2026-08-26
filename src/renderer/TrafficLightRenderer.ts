@@ -31,30 +31,28 @@ export class TrafficLightRenderer {
     for (const pole of poles.values()) {
       const poleGroup = new THREE.Group();
 
-      // Vecteurs d'approche et d'orientation
-      // heading = angle du vecteur d'approche
       const approachDir = new Vector2D(Math.cos(pole.heading), Math.sin(pole.heading));
-      const leftNormal = approachDir.normalLeft(); // Vers la gauche du conducteur (donc vers la chaussée)
+      const leftNormal = approachDir.normalLeft();
 
       const basePos = Vector2D.from(pole.position);
       const headPos = basePos.addScaled(leftNormal, pole.armLength);
 
       const height = pole.height;
+      const baseZ = pole.elevation || 0; // Altitude altimétrique au sol du mât
 
-      // 1. Mât vertical au sol (sur le trottoir)
+      // 1. Mât vertical au sol (sur le trottoir à l'altitude baseZ)
       const mastGeom = new THREE.CylinderGeometry(0.12, 0.16, height, 16);
       const mastMesh = new THREE.Mesh(mastGeom, this.poleMat);
-      mastMesh.position.set(basePos.x, height / 2, basePos.y);
+      mastMesh.position.set(basePos.x, baseZ + height / 2, basePos.y);
       mastMesh.castShadow = true;
       poleGroup.add(mastMesh);
 
-      // 2. Potence horizontale s'étendant vers la chaussée
+      // 2. Potence horizontale
       const armMid = basePos.addScaled(leftNormal, pole.armLength / 2);
       const armGeom = new THREE.CylinderGeometry(0.08, 0.08, pole.armLength, 16);
       const armMesh = new THREE.Mesh(armGeom, this.poleMat);
-      armMesh.position.set(armMid.x, height - 0.2, armMid.y);
+      armMesh.position.set(armMid.x, baseZ + height - 0.2, armMid.y);
       
-      // Orienter le cylindre de la potence le long de leftNormal
       armMesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
         new THREE.Vector3(leftNormal.x, 0, leftNormal.y)
@@ -62,20 +60,18 @@ export class TrafficLightRenderer {
       armMesh.castShadow = true;
       poleGroup.add(armMesh);
 
-      // 3. Boîtier principal suspendu au bout de la potence
-      const boxY = height - 0.9;
+      // 3. Boîtier principal
+      const boxY = baseZ + height - 0.9;
       const boxGeom = new THREE.BoxGeometry(0.42, 1.25, 0.3);
       const boxMesh = new THREE.Mesh(boxGeom, this.housingMat);
       boxMesh.position.set(headPos.x, boxY, headPos.y);
 
-      // Rotation pour que la face avant du boîtier regarde vers -approachDir (face aux conducteurs)
       const boxAngle = Math.atan2(approachDir.x, approachDir.y);
       boxMesh.rotation.y = boxAngle;
       boxMesh.castShadow = true;
       poleGroup.add(boxMesh);
 
-      // 4. Optiques Rouge, Jaune, Verte sur le boîtier principal
-      // Décalage vers l'avant du boîtier face aux véhicules
+      // 4. Optiques principales
       const forwardOffset = approachDir.multiplyScalar(-0.16);
       const lensGeom = new THREE.SphereGeometry(0.13, 16, 16);
 
@@ -108,8 +104,8 @@ export class TrafficLightRenderer {
       poleGroup.add(yellowLens);
       poleGroup.add(greenLens);
 
-      // 5. Boîtier répétiteur bas sur le mât (hauteur conducteur ~2.4m)
-      const repBoxY = 2.4;
+      // 5. Boîtier répétiteur bas
+      const repBoxY = baseZ + 2.4;
       const repBoxGeom = new THREE.BoxGeometry(0.35, 0.95, 0.25);
       const repBoxMesh = new THREE.Mesh(repBoxGeom, this.housingMat);
       repBoxMesh.position.set(basePos.x, repBoxY, basePos.y);

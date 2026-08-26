@@ -6,9 +6,11 @@ import { SidewalkBuilder } from './SidewalkBuilder';
 import { MarkingBuilder } from './MarkingBuilder';
 import { TrafficRegulationEngine } from './regulation/TrafficRegulationEngine';
 import { TrafficLightEngine } from './traffic-lights/TrafficLightEngine';
+import { ElevationEngine } from './elevation/ElevationEngine';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
+  public elevation: ElevationEngine;
   public regulation: TrafficRegulationEngine;
   public trafficLights: TrafficLightEngine;
   public seed: number;
@@ -16,14 +18,18 @@ export class RoadWorldEngine {
   constructor(seed: number = 482915) {
     this.seed = seed;
     this.network = new RoadNetwork();
+    this.elevation = new ElevationEngine(this.network);
     this.regulation = new TrafficRegulationEngine(this.network);
     this.trafficLights = new TrafficLightEngine(this.network);
   }
 
   /**
-   * Construit l'ensemble des systèmes géométriques, topologiques, réglementaires et lumineux
+   * Construit l'ensemble des systèmes géométriques, altimétriques, topologiques, réglementaires et lumineux
    */
   build(): void {
+    // 0. Synchronisation altimétrique (Profil en long, pentes et dévers)
+    this.elevation.build();
+
     // 1. Géométrie des routes (rubans & polygones d'emprise)
     RoadGeometryBuilder.buildRoadGeometries(this.network);
 

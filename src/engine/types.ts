@@ -77,6 +77,7 @@ export interface CrosswalkData {
   id: string;
   parentRoadId: string;
   center: IVector2D;
+  elevation: number;    // Altitude Z au sol du passage piéton
   direction: IVector2D; // Tangente de la route
   width: number;        // Largeur de la route (couverte par le passage)
   length: number;       // Largeur de traversée (ex: 3.0m)
@@ -87,6 +88,7 @@ export interface DirectionalArrowData {
   id: string;
   laneId: string;
   position: IVector2D;
+  elevation: number;    // Altitude Z au sol de la flèche
   direction: IVector2D;
   movement: LaneAllowedMovement;
 }
@@ -97,6 +99,7 @@ export interface StopLineData {
   intersectionId: string;
   p1: IVector2D;
   p2: IVector2D;
+  elevation: number;    // Altitude Z au sol de la ligne d'arrêt
   width: number; // 0.50m pour STOP, 0.20m pour Cédez-le-passage
   isDashed: boolean;
 }

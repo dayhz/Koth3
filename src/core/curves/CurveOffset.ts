@@ -18,15 +18,19 @@ export class CurveOffset {
   }
 
   /**
-   * Crée une courbe décalée si la courbe est analytiquement décalable (Linear, Arc).
-   * Pour Bézier cubique, approxime les points de contrôle ou retourne un nouveau Bézier.
+   * Crée une courbe décalée avec propagation intégrale des altitudes de départ et d'arrivée
    */
   static offsetCurve(curve: ICurve, offset: number): ICurve {
+    const startElevation = curve.startElevation ?? 0;
+    const endElevation = curve.endElevation ?? 0;
+
     if (curve instanceof LinearCurve) {
       const normal = curve.getNormal(0);
       return new LinearCurve(
         curve.start.addScaled(normal, offset),
-        curve.end.addScaled(normal, offset)
+        curve.end.addScaled(normal, offset),
+        startElevation,
+        endElevation
       );
     }
 
@@ -37,7 +41,9 @@ export class CurveOffset {
         Math.max(0.01, newRadius),
         curve.startAngle,
         curve.endAngle,
-        curve.clockwise
+        curve.clockwise,
+        startElevation,
+        endElevation
       );
     }
 
@@ -51,10 +57,15 @@ export class CurveOffset {
         curve.p0.addScaled(n0, offset),
         curve.p1.addScaled(n1, offset),
         curve.p2.addScaled(n2, offset),
-        curve.p3.addScaled(n3, offset)
+        curve.p3.addScaled(n3, offset),
+        startElevation,
+        endElevation
       );
     }
 
-    return curve.clone();
+    const cloned = curve.clone();
+    cloned.startElevation = startElevation;
+    cloned.endElevation = endElevation;
+    return cloned;
   }
 }

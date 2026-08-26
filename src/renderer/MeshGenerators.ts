@@ -10,7 +10,7 @@ import { CrosswalkData, DirectionalArrowData, SplitterIsland, StopLineData } fro
 
 export class MeshGenerators {
   /**
-   * Crée la géométrie 3D d'un ruban de route d'asphalte
+   * Crée la géométrie 3D d'un ruban de route d'asphalte avec élévation 3D continue et profil en long
    */
   static createRoadMesh(road: RoadSegment, samples: number = 32): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
@@ -30,6 +30,8 @@ export class MeshGenerators {
     let prevLeft = leftPts[0];
 
     for (let i = 0; i < samples; i++) {
+      const alpha = i / (samples - 1);
+      const t = tStart + alpha * (tEnd - tStart);
       const l = leftPts[i];
       const r = rightPts[i];
 
@@ -38,11 +40,19 @@ export class MeshGenerators {
       }
       prevLeft = l;
 
-      positions.push(l.x, 0.0, l.y);
+      // Altitude du profil en long à t
+      const baseElev = road.centerline.getElevation(t);
+
+      // Dévers transversal (bombement -2.5% sur les bords)
+      const camberOffset = -halfWidth * 0.025;
+      const zLeft = baseElev + camberOffset;
+      const zRight = baseElev + camberOffset;
+
+      positions.push(l.x, zLeft, l.y);
       normals.push(0, 1, 0);
       uvs.push(0, totalDist * 0.2);
 
-      positions.push(r.x, 0.0, r.y);
+      positions.push(r.x, zRight, r.y);
       normals.push(0, 1, 0);
       uvs.push(1, totalDist * 0.2);
 
@@ -66,13 +76,13 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée la surface 3D d'une intersection ou d'un anneau de giratoire
+   * Crée la surface 3D d'une intersection ou d'un anneau de giratoire avec altitude Z
    */
   static createIntersectionMesh(node: IntersectionNode): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
+    const nodeZ = node.elevation;
 
     if (node.type === 'roundabout' && node.roundaboutConfig) {
-      // Anneau de giratoire avec trou central (Earcut with hole)
       const config = node.roundaboutConfig;
       const center = Vector2D.from(config.center);
       const outerR = config.radius;
@@ -81,16 +91,13 @@ export class MeshGenerators {
 
       const flatCoords: number[] = [];
 
-      // Contour extérieur
       for (let i = 0; i < segments; i++) {
         const angle = (i / segments) * 2 * Math.PI;
         flatCoords.push(center.x + outerR * Math.cos(angle), center.y + outerR * Math.sin(angle));
       }
 
-      // Trou intérieur (index de trou)
       const holeIndex = flatCoords.length / 2;
       for (let i = 0; i < segments; i++) {
-        // Sens inverse pour le trou
         const angle = -(i / segments) * 2 * Math.PI;
         flatCoords.push(center.x + innerR * Math.cos(angle), center.y + innerR * Math.sin(angle));
       }
@@ -103,7 +110,7 @@ export class MeshGenerators {
       for (let i = 0; i < flatCoords.length; i += 2) {
         const x = flatCoords[i];
         const y = flatCoords[i + 1];
-        positions.push(x, 0.0, y);
+        positions.push(x, nodeZ, y);
         normals.push(0, 1, 0);
         uvs.push(x * 0.1, y * 0.1);
       }
@@ -132,7 +139,7 @@ export class MeshGenerators {
     const uvs: number[] = [];
 
     for (const v of poly.vertices) {
-      positions.push(v.x, 0.0, v.y);
+      positions.push(v.x, nodeZ, v.y);
       normals.push(0, 1, 0);
       uvs.push(v.x * 0.1, v.y * 0.1);
     }
@@ -146,7 +153,7 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée l'îlot central surélevé d'un giratoire
+   * Crée l'îlot central surélevé d'un giratoire à l'altitude Z
    */
   static createRoundaboutCentralIslandMesh(node: IntersectionNode): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
@@ -155,7 +162,9 @@ export class MeshGenerators {
     const config = node.roundaboutConfig;
     const center = Vector2D.from(config.center);
     const radius = config.innerRadius;
-    const height = 0.20; // 20cm de surélévation
+    const baseZ = node.elevation;
+    const height = 0.20;
+    const topZ = baseZ + height;
     const segments = 48;
 
     const positions: number[] = [];
@@ -163,8 +172,8 @@ export class MeshGenerators {
     const uvs: number[] = [];
     const indices: number[] = [];
 
-    // 1. Disque supérieur (centre + points du pourtour)
-    positions.push(center.x, height, center.y);
+    // Disque supérieur
+    positions.push(center.x, topZ, center.y);
     normals.push(0, 1, 0);
     uvs.push(0.5, 0.5);
 
@@ -172,7 +181,7 @@ export class MeshGenerators {
       const angle = (i / segments) * 2 * Math.PI;
       const x = center.x + radius * Math.cos(angle);
       const y = center.y + radius * Math.sin(angle);
-      positions.push(x, height, y);
+      positions.push(x, topZ, y);
       normals.push(0, 1, 0);
       uvs.push(0.5 + 0.5 * Math.cos(angle), 0.5 + 0.5 * Math.sin(angle));
 
@@ -181,20 +190,18 @@ export class MeshGenerators {
       }
     }
 
-    // 2. Bordure latérale verticale
+    // Bordure latérale
     const sideOffset = positions.length / 3;
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * 2 * Math.PI;
       const x = center.x + radius * Math.cos(angle);
       const y = center.y + radius * Math.sin(angle);
 
-      // Bas
-      positions.push(x, 0.0, y);
+      positions.push(x, baseZ, y);
       normals.push(Math.cos(angle), 0, Math.sin(angle));
       uvs.push(i / segments, 0);
 
-      // Haut
-      positions.push(x, height, y);
+      positions.push(x, topZ, y);
       normals.push(Math.cos(angle), 0, Math.sin(angle));
       uvs.push(i / segments, 1);
 
@@ -217,9 +224,9 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée un trottoir 3D surélevé avec surface supérieure et bordure verticale (curb)
+   * Crée un trottoir 3D surélevé avec surface supérieure et bordure verticale
    */
-  static createSidewalkMesh(sidewalk: Sidewalk): THREE.BufferGeometry {
+  static createSidewalkMesh(sidewalk: Sidewalk, parentRoad?: RoadSegment): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
     const height = sidewalk.height;
 
@@ -233,18 +240,23 @@ export class MeshGenerators {
     const uvs: number[] = [];
     const indices: number[] = [];
 
-    // Surface supérieure du trottoir (y = height)
     let totalDist = 0;
     for (let i = 0; i < count; i++) {
+      const alpha = i / (count - 1);
+      const t = parentRoad ? parentRoad.tStart + alpha * (parentRoad.tEnd - parentRoad.tStart) : alpha;
+      const roadZ = parentRoad ? parentRoad.centerline.getElevation(t) : 0;
+      const topZ = roadZ + height;
+
       const inPt = inner[i];
       const outPt = outer[i];
       if (i > 0) totalDist += inner[i - 1].distanceTo(inPt);
 
-      positions.push(inPt.x, height, inPt.y);
+      // Surface supérieure (topZ)
+      positions.push(inPt.x, topZ, inPt.y);
       normals.push(0, 1, 0);
       uvs.push(0, totalDist * 0.5);
 
-      positions.push(outPt.x, height, outPt.y);
+      positions.push(outPt.x, topZ, outPt.y);
       normals.push(0, 1, 0);
       uvs.push(1, totalDist * 0.5);
 
@@ -258,15 +270,20 @@ export class MeshGenerators {
       }
     }
 
-    // Bordure verticale côté route (curb face : y=0 to y=height)
+    // Bordure verticale
     const curbOffset = positions.length / 3;
     for (let i = 0; i < count; i++) {
+      const alpha = i / (count - 1);
+      const t = parentRoad ? parentRoad.tStart + alpha * (parentRoad.tEnd - parentRoad.tStart) : alpha;
+      const roadZ = parentRoad ? parentRoad.centerline.getElevation(t) : 0;
+      const topZ = roadZ + height;
       const inPt = inner[i];
-      positions.push(inPt.x, 0.0, inPt.y);
+
+      positions.push(inPt.x, roadZ, inPt.y);
       normals.push(0, 0, 1);
       uvs.push(0, i);
 
-      positions.push(inPt.x, height, inPt.y);
+      positions.push(inPt.x, topZ, inPt.y);
       normals.push(0, 0, 1);
       uvs.push(1, i);
 
@@ -291,10 +308,11 @@ export class MeshGenerators {
   /**
    * Crée la géométrie 3D d'un îlot séparateur triangulaire (Splitter Island)
    */
-  static createSplitterIslandMesh(island: SplitterIsland): THREE.BufferGeometry {
+  static createSplitterIslandMesh(island: SplitterIsland, baseElevation: number = 0): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
     const pts = island.polygon;
     const height = island.height || 0.15;
+    const topZ = baseElevation + height;
     if (pts.length < 3) return geometry;
 
     const flatCoords: number[] = [];
@@ -310,7 +328,7 @@ export class MeshGenerators {
 
     // Surface supérieure
     for (const p of pts) {
-      positions.push(p.x, height, p.y);
+      positions.push(p.x, topZ, p.y);
       normals.push(0, 1, 0);
       uvs.push(p.x * 0.2, p.y * 0.2);
     }
@@ -321,11 +339,11 @@ export class MeshGenerators {
     const n = pts.length;
     for (let i = 0; i < n; i++) {
       const p = pts[i];
-      positions.push(p.x, 0.0, p.y);
+      positions.push(p.x, baseElevation, p.y);
       normals.push(0, 0, 1);
       uvs.push(0, i);
 
-      positions.push(p.x, height, p.y);
+      positions.push(p.x, topZ, p.y);
       normals.push(0, 0, 1);
       uvs.push(1, i);
 
@@ -347,12 +365,12 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée la bande de marquage longitudinal au sol
+   * Crée la bande de marquage longitudinal au sol avec altitude 3D
    */
   static createMarkingMesh(marking: RoadMarking, samples: number = 32): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
     const halfWidth = marking.width / 2;
-    const yElevation = 0.004;
+    const yDelta = 0.005;
     const tStart = marking.tStart ?? 0;
     const tEnd = marking.tEnd ?? 1;
 
@@ -370,14 +388,18 @@ export class MeshGenerators {
 
     let dist = 0;
     for (let i = 0; i < samples; i++) {
+      const alpha = i / (samples - 1);
+      const t = tStart + alpha * (tEnd - tStart);
+      const z = marking.centerline.getElevation(t) + yDelta;
+
       const l = leftPts[i];
       const r = rightPts[i];
       if (i > 0) dist += leftPts[i - 1].distanceTo(l);
 
-      positions.push(l.x, yElevation, l.y);
+      positions.push(l.x, z, l.y);
       normals.push(0, 1, 0);
 
-      positions.push(r.x, yElevation, r.y);
+      positions.push(r.x, z, r.y);
       normals.push(0, 1, 0);
 
       if (i < samples - 1) {
@@ -400,12 +422,12 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée un passage piéton 3D (Zèbres)
+   * Crée un passage piéton 3D (Zèbres) avec altitude exacte
    */
   static createCrosswalkMesh(crosswalk: CrosswalkData): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
-    const yElevation = 0.005;
     const stripeHalfWidth = 0.25;
+    const baseZ = (crosswalk.elevation ?? 0) + 0.005;
 
     const positions: number[] = [];
     const normals: number[] = [];
@@ -425,10 +447,10 @@ export class MeshGenerators {
 
       const baseIdx = positions.length / 3;
 
-      positions.push(v1.x, yElevation, v1.y);
-      positions.push(v2.x, yElevation, v2.y);
-      positions.push(v3.x, yElevation, v3.y);
-      positions.push(v4.x, yElevation, v4.y);
+      positions.push(v1.x, baseZ, v1.y);
+      positions.push(v2.x, baseZ, v2.y);
+      positions.push(v3.x, baseZ, v3.y);
+      positions.push(v4.x, baseZ, v4.y);
 
       normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
 
@@ -444,11 +466,11 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée une ligne d'arrêt transversale (Stop / Yield Line)
+   * Crée une ligne d'arrêt transversale avec altitude exacte
    */
   static createStopLineMesh(stopLine: StopLineData): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
-    const yElevation = 0.005;
+    const yZ = (stopLine.elevation ?? 0) + 0.005;
     const p1 = Vector2D.from(stopLine.p1);
     const p2 = Vector2D.from(stopLine.p2);
     const dir = p2.sub(p1).normalize();
@@ -461,10 +483,10 @@ export class MeshGenerators {
     const v4 = p2.addScaled(normal, -halfThick);
 
     const positions = [
-      v1.x, yElevation, v1.y,
-      v2.x, yElevation, v2.y,
-      v3.x, yElevation, v3.y,
-      v4.x, yElevation, v4.y,
+      v1.x, yZ, v1.y,
+      v2.x, yZ, v2.y,
+      v3.x, yZ, v3.y,
+      v4.x, yZ, v4.y,
     ];
 
     const normals = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
@@ -478,11 +500,11 @@ export class MeshGenerators {
   }
 
   /**
-   * Crée une flèche directionnelle au sol
+   * Crée une flèche directionnelle au sol avec altitude exacte
    */
   static createDirectionalArrowMesh(arrow: DirectionalArrowData): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry();
-    const yElevation = 0.005;
+    const yZ = (arrow.elevation ?? 0) + 0.005;
     const pos = Vector2D.from(arrow.position);
     const dir = Vector2D.from(arrow.direction).normalize();
     const norm = dir.normalLeft();
@@ -507,10 +529,10 @@ export class MeshGenerators {
     const s4 = neckPt.addScaled(norm, -stemWidth / 2);
 
     positions.push(
-      s1.x, yElevation, s1.y,
-      s2.x, yElevation, s2.y,
-      s3.x, yElevation, s3.y,
-      s4.x, yElevation, s4.y
+      s1.x, yZ, s1.y,
+      s2.x, yZ, s2.y,
+      s3.x, yZ, s3.y,
+      s4.x, yZ, s4.y
     );
     normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
     indices.push(0, 2, 1, 1, 2, 3);
@@ -522,9 +544,9 @@ export class MeshGenerators {
 
     const baseHeadIdx = positions.length / 3;
     positions.push(
-      h1.x, yElevation, h1.y,
-      h2.x, yElevation, h2.y,
-      h3.x, yElevation, h3.y
+      h1.x, yZ, h1.y,
+      h2.x, yZ, h2.y,
+      h3.x, yZ, h3.y
     );
     normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0);
     indices.push(baseHeadIdx, baseHeadIdx + 2, baseHeadIdx + 1);

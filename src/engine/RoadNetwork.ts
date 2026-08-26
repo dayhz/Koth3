@@ -37,9 +37,14 @@ export class RoadNetwork {
     this._roadCounter = 1;
   }
 
-  createNode(position: Vector2D, type: IntersectionType = 'dead_end', customId?: string): IntersectionNode {
+  createNode(
+    position: Vector2D,
+    type: IntersectionType = 'dead_end',
+    customId?: string,
+    elevation: number = 0
+  ): IntersectionNode {
     const id = customId || `N_${this._nodeCounter++}`;
-    const node = new IntersectionNode(id, position, type);
+    const node = new IntersectionNode(id, position, type, undefined, elevation);
     this.nodes.set(id, node);
     return node;
   }

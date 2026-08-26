@@ -213,7 +213,8 @@ export class ThreeRenderer {
 
     // 4. Trottoirs & Îlots séparateurs (Béton)
     for (const sidewalk of network.sidewalks.values()) {
-      const geom = MeshGenerators.createSidewalkMesh(sidewalk);
+      const parentRoad = network.roads.get(sidewalk.parentRoadId);
+      const geom = MeshGenerators.createSidewalkMesh(sidewalk, parentRoad);
       const mesh = new THREE.Mesh(geom, this.sidewalkMat);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
@@ -222,7 +223,7 @@ export class ThreeRenderer {
 
     for (const node of network.nodes.values()) {
       for (const island of node.splitterIslands) {
-        const geom = MeshGenerators.createSplitterIslandMesh(island);
+        const geom = MeshGenerators.createSplitterIslandMesh(island, node.elevation);
         const mesh = new THREE.Mesh(geom, this.sidewalkMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;

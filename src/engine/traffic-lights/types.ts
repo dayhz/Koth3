@@ -8,8 +8,9 @@ export interface TrafficLightPole {
   intersectionId: string;
   roadId: string;
   position: IVector2D;
-  heading: number; // Angle en radians vers lequel le feu fait face
-  height: number;  // Hauteur du mât (ex: 5.5m)
+  elevation: number; // Altitude altimétrique au sol du mât (ex: 10m sur un viaduc)
+  heading: number;   // Angle en radians vers lequel le feu fait face
+  height: number;    // Hauteur du mât (ex: 5.5m)
   armLength: number; // Longueur de la potence surplombant la chaussée (ex: 3.5m)
   controlledLaneIds: string[];
   currentState: TrafficLightState;
