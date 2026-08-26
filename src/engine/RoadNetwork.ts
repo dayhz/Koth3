@@ -5,7 +5,7 @@ import { IntersectionNode } from './IntersectionNode';
 import { Lane } from './Lane';
 import { Sidewalk } from './Sidewalk';
 import { RoadMarking } from './RoadMarking';
-import { IntersectionType, LaneConnection, RoadProfile } from './types';
+import { CrosswalkData, DirectionalArrowData, IntersectionType, LaneConnection, RoadProfile, StopLineData } from './types';
 
 export class RoadNetwork {
   public nodes: Map<string, IntersectionNode> = new Map();
@@ -14,6 +14,11 @@ export class RoadNetwork {
   public laneConnections: Map<string, LaneConnection> = new Map();
   public sidewalks: Map<string, Sidewalk> = new Map();
   public markings: Map<string, RoadMarking> = new Map();
+  
+  // Marquages avancés V0.3
+  public crosswalks: Map<string, CrosswalkData> = new Map();
+  public directionalArrows: Map<string, DirectionalArrowData> = new Map();
+  public stopLines: Map<string, StopLineData> = new Map();
 
   private _nodeCounter = 1;
   private _roadCounter = 1;
@@ -25,6 +30,9 @@ export class RoadNetwork {
     this.laneConnections.clear();
     this.sidewalks.clear();
     this.markings.clear();
+    this.crosswalks.clear();
+    this.directionalArrows.clear();
+    this.stopLines.clear();
     this._nodeCounter = 1;
     this._roadCounter = 1;
   }
@@ -49,6 +57,7 @@ export class RoadNetwork {
       radius,
       innerRadius,
       laneCount,
+      hasSplitterIslands: true,
     };
     return node;
   }
@@ -72,22 +81,16 @@ export class RoadNetwork {
     const road = new RoadSegment(id, startNodeId, endNodeId, centerline, profile, name);
     this.roads.set(id, road);
 
-    // Calculer les angles d'approche
     const startTangent = centerline.getTangent(0);
     const startAngle = Math.atan2(startTangent.y, startTangent.x);
     startNode.addConnectedRoad(id, true, startAngle, road.totalWidth);
 
     const endTangent = centerline.getTangent(1);
-    // Au nœud d'arrivée, la route pointe vers l'intersection (sens inverse de la tangente de sortie)
     const endAngle = Math.atan2(-endTangent.y, -endTangent.x);
     endNode.addConnectedRoad(id, false, endAngle, road.totalWidth);
 
     return road;
   }
-
-  // ==========================================
-  // REQUÊTES LOGIQUES / QUESTIONS TOPOLOGIQUES
-  // ==========================================
 
   getConnectedRoads(roadId: string): RoadSegment[] {
     const road = this.roads.get(roadId);
@@ -138,15 +141,9 @@ export class RoadNetwork {
       const roadLanes = this.getLanesForRoad(road.id);
       for (const lane of roadLanes) {
         if (arm.isStartOfRoad) {
-          // Si le nœud est au début de la route :
-          // - lane forward part du nœud -> outgoing
-          // - lane backward arrive au nœud -> incoming
           if (lane.direction === 'forward') outgoing.push(lane);
           else incoming.push(lane);
         } else {
-          // Si le nœud est à la fin de la route :
-          // - lane forward arrive au nœud -> incoming
-          // - lane backward part du nœud -> outgoing
           if (lane.direction === 'forward') incoming.push(lane);
           else outgoing.push(lane);
         }

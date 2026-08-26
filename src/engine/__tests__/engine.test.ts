@@ -35,7 +35,7 @@ describe('RoadWorldEngine & Graph Intelligence', () => {
     expect(road.laneIds.length).toBe(2);
     expect(engine.network.lanes.size).toBe(2);
     expect(engine.network.sidewalks.size).toBe(2);
-    expect(engine.network.markings.size).toBe(1);
+    expect(engine.network.markings.size).toBe(3); // 1 axe médian + 2 lignes de rive
 
     // Questions topologiques
     const lanes = engine.network.getLanesForRoad(road.id);

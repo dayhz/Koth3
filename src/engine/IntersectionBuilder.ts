@@ -137,20 +137,21 @@ export class IntersectionBuilder {
         const road = network.roads.get(arm.roadId);
         if (!road) continue;
 
-        // Position de l'extrémité de la route devant le giratoire
-        const roadEndPt = arm.isStartOfRoad ? road.centerline.getPoint(0) : road.centerline.getPoint(1);
+        // Position exacte de l'extrémité de la route à l'entrée de l'anneau
+        const tEndPt = arm.isStartOfRoad ? road.tStart : road.tEnd;
+        const roadEndPt = road.centerline.getPoint(tEndPt);
         const roadDir = arm.isStartOfRoad
-          ? road.centerline.getTangent(0).multiplyScalar(-1)
-          : road.centerline.getTangent(1);
+          ? road.centerline.getTangent(tEndPt)
+          : road.centerline.getTangent(tEndPt).multiplyScalar(-1);
 
         const normal = roadDir.normalLeft();
         const halfW = 1.6; // Largeur de l'îlot à la base
         const islandLength = 8.0;
 
-        // Triangle d'îlot séparateur
-        const pApex = roadEndPt.addScaled(roadDir, islandLength); // Pointe vers la route
-        const pBaseLeft = roadEndPt.addScaled(normal, halfW);      // Base gauche vers l'anneau
-        const pBaseRight = roadEndPt.addScaled(normal, -halfW);    // Base droite vers l'anneau
+        // Triangle d'îlot séparateur (pointe vers la route, base le long de l'anneau)
+        const pApex = roadEndPt.addScaled(roadDir, islandLength); // Pointe dans l'axe de la route
+        const pBaseLeft = roadEndPt.addScaled(normal, halfW);      // Base gauche
+        const pBaseRight = roadEndPt.addScaled(normal, -halfW);    // Base droite
 
         const island: SplitterIsland = {
           id: `SI_${node.id}_${islandCounter++}`,

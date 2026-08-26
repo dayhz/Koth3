@@ -78,8 +78,8 @@ class App {
     document.getElementById('stat-roads')!.textContent = stats.roadsCount.toString();
     document.getElementById('stat-lanes')!.textContent = stats.lanesCount.toString();
     document.getElementById('stat-sidewalks')!.textContent = stats.sidewalksCount.toString();
-    document.getElementById('stat-markings')!.textContent = stats.markingsCount.toString();
-    document.getElementById('stat-connections')!.textContent = stats.connectionsCount.toString();
+    document.getElementById('stat-crosswalks')!.textContent = stats.crosswalksCount.toString();
+    document.getElementById('stat-stoplines')!.textContent = stats.stopLinesCount.toString();
   }
 
   private updateValidationReport(): void {

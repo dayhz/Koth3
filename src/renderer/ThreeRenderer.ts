@@ -190,12 +190,21 @@ export class ThreeRenderer {
       this.roadGroup.add(mesh);
     }
 
-    // 3. Intersections (Asphalte)
+    // 3. Intersections & Anneaux de giratoires (Asphalte)
     for (const node of network.nodes.values()) {
       const geom = MeshGenerators.createIntersectionMesh(node);
       const mesh = new THREE.Mesh(geom, this.asphaltMat);
       mesh.receiveShadow = true;
       this.intersectionGroup.add(mesh);
+
+      // Îlot central surélevé pour giratoires
+      if (node.type === 'roundabout' && node.roundaboutConfig) {
+        const islandGeom = MeshGenerators.createRoundaboutCentralIslandMesh(node);
+        const islandMesh = new THREE.Mesh(islandGeom, this.sidewalkMat);
+        islandMesh.castShadow = true;
+        islandMesh.receiveShadow = true;
+        this.intersectionGroup.add(islandMesh);
+      }
     }
 
     // 4. Trottoirs & Îlots séparateurs (Béton)
@@ -220,6 +229,27 @@ export class ThreeRenderer {
     // 5. Marquages au sol (Blanc)
     for (const marking of network.markings.values()) {
       const geom = MeshGenerators.createMarkingMesh(marking);
+      const mesh = new THREE.Mesh(geom, this.markingMat);
+      this.markingGroup.add(mesh);
+    }
+
+    // Passages piétons (Zèbres)
+    for (const crosswalk of network.crosswalks.values()) {
+      const geom = MeshGenerators.createCrosswalkMesh(crosswalk);
+      const mesh = new THREE.Mesh(geom, this.markingMat);
+      this.markingGroup.add(mesh);
+    }
+
+    // Lignes d'arrêt transversales (Stop / Yield)
+    for (const stopLine of network.stopLines.values()) {
+      const geom = MeshGenerators.createStopLineMesh(stopLine);
+      const mesh = new THREE.Mesh(geom, this.markingMat);
+      this.markingGroup.add(mesh);
+    }
+
+    // Flèches directionnelles au sol
+    for (const arrow of network.directionalArrows.values()) {
+      const geom = MeshGenerators.createDirectionalArrowMesh(arrow);
       const mesh = new THREE.Mesh(geom, this.markingMat);
       this.markingGroup.add(mesh);
     }

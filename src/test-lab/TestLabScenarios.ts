@@ -171,10 +171,10 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const n = engine.network.createNode(new Vector2D(0, 65), 'dead_end', 'N');
       const s = engine.network.createNode(new Vector2D(0, -65), 'dead_end', 'S');
 
-      engine.network.createRoad(w.id, rbNode.id, new LinearCurve(w.position, new Vector2D(-22, 0)), defaultResidentialProfile, 'R_RB_W');
-      engine.network.createRoad(rbNode.id, e.id, new LinearCurve(new Vector2D(22, 0), e.position), defaultResidentialProfile, 'R_RB_E');
-      engine.network.createRoad(n.id, rbNode.id, new LinearCurve(n.position, new Vector2D(0, 22)), defaultResidentialProfile, 'R_RB_N');
-      engine.network.createRoad(rbNode.id, s.id, new LinearCurve(new Vector2D(0, -22), s.position), defaultResidentialProfile, 'R_RB_S');
+      engine.network.createRoad(w.id, rbNode.id, new LinearCurve(w.position, rbNode.position), defaultResidentialProfile, 'R_RB_W');
+      engine.network.createRoad(rbNode.id, e.id, new LinearCurve(rbNode.position, e.position), defaultResidentialProfile, 'R_RB_E');
+      engine.network.createRoad(n.id, rbNode.id, new LinearCurve(n.position, rbNode.position), defaultResidentialProfile, 'R_RB_N');
+      engine.network.createRoad(rbNode.id, s.id, new LinearCurve(rbNode.position, s.position), defaultResidentialProfile, 'R_RB_S');
 
       engine.build();
       return engine;

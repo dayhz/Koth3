@@ -42,6 +42,9 @@ export class RoadWorldEngine {
       connectionsCount: this.network.laneConnections.size,
       sidewalksCount: this.network.sidewalks.size,
       markingsCount: this.network.markings.size,
+      crosswalksCount: this.network.crosswalks.size,
+      stopLinesCount: this.network.stopLines.size,
+      arrowsCount: this.network.directionalArrows.size,
     };
   }
 }

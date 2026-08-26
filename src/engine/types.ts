@@ -11,6 +11,7 @@ export interface RoadProfile {
   sidewalkWidthRight: number; // en mètres
   curbHeight: number; // hauteur bordure (ex: 0.15m)
   speedLimitKmH: number; // ex: 30, 50, 70
+  hasEdgeLines?: boolean;
 }
 
 export type IntersectionType = 'dead_end' | 't_junction' | 'four_way' | 'multi_branch' | 'roundabout';
@@ -40,10 +41,10 @@ export interface CurbReturnData {
 
 export interface RoundaboutConfig {
   center: IVector2D;
-  radius: number; // Rayon extérieur de l'anneau (ex: 18m)
-  innerRadius: number; // Rayon de l'îlot central (ex: 10m)
-  laneCount: number; // 1 ou 2 voies annulaires
-  hasSplitterIslands?: boolean; // Îlots triangulaires d'entrée
+  radius: number;
+  innerRadius: number;
+  laneCount: number;
+  hasSplitterIslands?: boolean;
 }
 
 export type LaneDirection = 'forward' | 'backward';
@@ -58,7 +59,47 @@ export interface LaneConnection {
   trajectory: ICurve;
 }
 
-export type MarkingType = 'center_dashed' | 'center_solid' | 'lane_dashed' | 'edge_solid' | 'stop_line' | 'roundabout_yield';
+export type MarkingType =
+  | 'center_dashed'
+  | 'center_solid'
+  | 'lane_dashed'
+  | 'edge_solid'
+  | 'stop_line'
+  | 'yield_line'
+  | 'crosswalk'
+  | 'arrow_straight'
+  | 'arrow_left'
+  | 'arrow_right'
+  | 'arrow_straight_left'
+  | 'arrow_straight_right';
+
+export interface CrosswalkData {
+  id: string;
+  parentRoadId: string;
+  center: IVector2D;
+  direction: IVector2D; // Tangente de la route
+  width: number;        // Largeur de la route (couverte par le passage)
+  length: number;       // Largeur de traversée (ex: 3.0m)
+  stripes: { p1: IVector2D; p2: IVector2D }[];
+}
+
+export interface DirectionalArrowData {
+  id: string;
+  laneId: string;
+  position: IVector2D;
+  direction: IVector2D;
+  movement: LaneAllowedMovement;
+}
+
+export interface StopLineData {
+  id: string;
+  laneId: string;
+  intersectionId: string;
+  p1: IVector2D;
+  p2: IVector2D;
+  width: number; // 0.50m pour STOP, 0.20m pour Cédez-le-passage
+  isDashed: boolean;
+}
 
 export interface MeshBufferData {
   positions: Float32Array;
