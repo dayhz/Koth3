@@ -3,7 +3,6 @@ import { LinearCurve, CubicBezierCurve } from '../core/curves/Curve';
 import { RoadWorldEngine } from '../engine/RoadWorldEngine';
 import { RoadProfile } from '../engine/types';
 import { CityBuilder } from '../engine/procedural/CityBuilder';
-import { OrganicCityGenerator } from '../engine/procedural/OrganicCityGenerator';
 
 export interface TestScenario {
   id: string;
@@ -396,59 +395,171 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-19',
-    name: 'Mégalopole Procédurale Unifiée V1.0 (Radial, Organique, Viaducs & Grille)',
+    name: 'Méga-Circuit Métropolitain Complet V1.0 (Tous Systèmes V0.1 à V1.0 Intégrés)',
     category: 'Version Finale V1.0',
-    description: 'Chef-d’œuvre 100% procédural combinant tous les générateurs d’algorithmes : Cœur radial à anneaux concentriques en arcs de cercle (TEST-16), Quartier historique organique en courbes de Bézier arborescentes (TEST-15), Viaduc autoroutier surélevé à +14m (TEST-11/12), et 80 véhicules autonomes IDM (TEST-17/18).',
-    expectedResult: 'Une immense métropole 3D générée purement par algorithmes mathématiques où le trafic circule de manière fluide et autonome.',
+    description: 'La synthèse ultime : 3 grands giratoires, viaduc autoroutier à +15m enjambant une avenue au sol, lacets de montagne sinueux en S déversés grimpant à +14m, quartier organique en courbes de Bézier avec carrefour en Y, grille Manhattan à feux synchronisés et 80 véhicules autonomes IDM.',
+    expectedResult: 'Un monde 3D continu et spectaculaire combinant 100% des technologies développées depuis la V0.1.',
     createEngine: () => {
       const engine = new RoadWorldEngine(119);
       const net = engine.network;
 
       // =========================================================================
-      // 1. GÉNÉRATION PROCÉDURALE DU CŒUR RADIAL & GIRATOIRE (TEST-16 RadialCityGenerator)
+      // 1. LES 3 GRANDS GIRATOIRES (V0.2 & V0.4 - Priorité Anneau & Îlots)
       // =========================================================================
-      CityBuilder.createRadialCity(engine, {
-        centerRadius: 24,
-        ringRadii: [80, 160],
-        spokesCount: 6,
-        majorProfile: fourLaneAvenueProfile,
-        minorProfile: defaultResidentialProfile,
-      });
+      const rndC = net.createRoundaboutNode(new Vector2D(0, 0), 24, 13, 2, 'Giratoire Central (Étoile)');
+      const rndN = net.createRoundaboutNode(new Vector2D(0, 170), 22, 12, 2, 'Giratoire Nord (Parc)');
+      const rndS = net.createRoundaboutNode(new Vector2D(0, -170), 22, 12, 2, 'Giratoire Sud (Colline)');
+
+      // Boulevards centraux reliant les giratoires
+      net.createRoad(rndC.id, rndN.id, new LinearCurve(rndC.position, rndN.position), fourLaneAvenueProfile, 'BD_CENTRAL_NORD');
+      net.createRoad(rndC.id, rndS.id, new LinearCurve(rndC.position, rndS.position), fourLaneAvenueProfile, 'BD_CENTRAL_SUD');
 
       // =========================================================================
-      // 2. GÉNÉRATION PROCÉDURALE DU QUARTIER HISTORIQUE ORGANIQUE (TEST-15 OrganicCityGenerator)
+      // 2. BOUCLE AUTOROUTIÈRE EN VIADUC À +15M & PONT SUPÉRIEUR (V0.6)
       // =========================================================================
-      OrganicCityGenerator.generate(
-        net,
-        {
-          boundsWidth: 200,
-          boundsHeight: 200,
-          mainArteriesCount: 4,
-          branchesPerArtery: 3,
-          curviness: 0.75,
-          snapDistance: 25,
-          majorProfile: fourLaneAvenueProfile,
-          minorProfile: defaultResidentialProfile,
-        },
-        777
+      const viaN = net.createNode(new Vector2D(-100, 170), 'dead_end', 'Viaduc Montée Nord (+15m)', 15);
+      const viaW = net.createNode(new Vector2D(-180, 0), 'dead_end', 'Viaduc Pont Supérieur (+15m)', 15);
+      const viaS = net.createNode(new Vector2D(-100, -170), 'dead_end', 'Viaduc Descente Sud (+15m)', 15);
+
+      net.createRoad(rndN.id, viaN.id, new LinearCurve(rndN.position, viaN.position, 0, 15), fourLaneAvenueProfile, 'RAMPE_VIADUC_NORD');
+      net.createRoad(viaN.id, viaW.id, new LinearCurve(viaN.position, viaW.position, 15, 15), fourLaneAvenueProfile, 'VIADUC_TABLIER_1');
+      net.createRoad(viaW.id, viaS.id, new LinearCurve(viaW.position, viaS.position, 15, 15), fourLaneAvenueProfile, 'VIADUC_TABLIER_2');
+      net.createRoad(viaS.id, rndS.id, new LinearCurve(viaS.position, rndS.position, 15, 0), fourLaneAvenueProfile, 'RAMPE_VIADUC_SUD');
+
+      // Avenue transversale au sol (0m) passant DIRECTEMENT sous le tablier du viaduc
+      const underpassW = net.createNode(new Vector2D(-240, 0), 'dead_end', 'Avenue Sous Pont Ouest', 0);
+      net.createRoad(rndC.id, underpassW.id, new LinearCurve(rndC.position, underpassW.position, 0, 0), fourLaneAvenueProfile, 'AVENUE_SOUS_VIADUC');
+
+      // =========================================================================
+      // 3. QUARTIER HISTORIQUE ORGANIQUE EN BÉZIERS & BIFURCATION EN Y (V0.1, V0.2, V0.7)
+      // =========================================================================
+      const forkY = net.createNode(new Vector2D(90, 240), 't_junction', 'Bifurcation en Y Historique');
+      const orgBranch1 = net.createNode(new Vector2D(180, 270), 'dead_end', 'Belvédère Nord');
+      const orgBranch2 = net.createNode(new Vector2D(180, 200), 'four_way', 'Porte Nord-Est');
+
+      // Grande courbe de Bézier sinueuse reliant le Giratoire Nord à la bifurcation en Y
+      const curveOrganicMain = new CubicBezierCurve(
+        rndN.position,
+        new Vector2D(20, 230),
+        new Vector2D(60, 250),
+        forkY.position
+      );
+      // Deux branches en Y sinueuses
+      const curveFork1 = new CubicBezierCurve(
+        forkY.position,
+        new Vector2D(120, 260),
+        new Vector2D(150, 275),
+        orgBranch1.position
+      );
+      const curveFork2 = new CubicBezierCurve(
+        forkY.position,
+        new Vector2D(120, 220),
+        new Vector2D(150, 205),
+        orgBranch2.position
       );
 
-      // =========================================================================
-      // 3. BOUCLE AUTOROUTIÈRE EN VIADUC SURÉLEVÉ À +14M (TEST-11/12 Elevation)
-      // =========================================================================
-      const viaEntry = net.createNode(new Vector2D(-180, 100), 'dead_end', 'Viaduc Entrée (+0m)', 0);
-      const viaBridge1 = net.createNode(new Vector2D(-240, 0), 'dead_end', 'Viaduc Pont Supérieur (+14m)', 14);
-      const viaBridge2 = net.createNode(new Vector2D(-180, -100), 'dead_end', 'Viaduc Sortie (+0m)', 0);
-
-      net.createRoad(viaEntry.id, viaBridge1.id, new LinearCurve(viaEntry.position, viaBridge1.position, 0, 14), fourLaneAvenueProfile, 'VIADUC_RAMPE_MONTEE');
-      net.createRoad(viaBridge1.id, viaBridge2.id, new LinearCurve(viaBridge1.position, viaBridge2.position, 14, 0), fourLaneAvenueProfile, 'VIADUC_RAMPE_DESCENTE');
+      net.createRoad(rndN.id, forkY.id, curveOrganicMain, defaultResidentialProfile, 'ART_ORGANIC_MAIN');
+      net.createRoad(forkY.id, orgBranch1.id, curveFork1, defaultResidentialProfile, 'BRANCHE_Y_1');
+      net.createRoad(forkY.id, orgBranch2.id, curveFork2, defaultResidentialProfile, 'BRANCHE_Y_2');
 
       // =========================================================================
-      // 4. CONSTRUCTION, SIGNALISATION & SIMULATION AUTONOME IDM (V0.3 à V0.8)
+      // 4. COL DE MONTAGNE EN LACETS SINUEUX EN S À +14M AVEC DÉVERS (V0.6)
+      // =========================================================================
+      const mntStage1 = net.createNode(new Vector2D(60, -220), 'dead_end', 'Lacet 1 (+6m)', 6);
+      const mntPeak = net.createNode(new Vector2D(120, -270), 'dead_end', 'Col Sommet (+14m)', 14);
+      const mntStage2 = net.createNode(new Vector2D(180, -220), 'dead_end', 'Lacet 2 (+6m)', 6);
+      const mntExit = net.createNode(new Vector2D(240, -170), 'four_way', 'Sortie Col Sud-Est', 0);
+
+      const curveMnt1 = new CubicBezierCurve(
+        rndS.position,
+        new Vector2D(10, -200),
+        new Vector2D(40, -225),
+        mntStage1.position,
+        0,
+        6
+      );
+      const curveMnt2 = new CubicBezierCurve(
+        mntStage1.position,
+        new Vector2D(80, -260),
+        new Vector2D(95, -275),
+        mntPeak.position,
+        6,
+        14
+      );
+      const curveMnt3 = new CubicBezierCurve(
+        mntPeak.position,
+        new Vector2D(145, -275),
+        new Vector2D(160, -260),
+        mntStage2.position,
+        14,
+        6
+      );
+      const curveMnt4 = new CubicBezierCurve(
+        mntStage2.position,
+        new Vector2D(200, -200),
+        new Vector2D(220, -180),
+        mntExit.position,
+        6,
+        0
+      );
+
+      net.createRoad(rndS.id, mntStage1.id, curveMnt1, defaultResidentialProfile, 'LACET_MONTAGNE_1');
+      net.createRoad(mntStage1.id, mntPeak.id, curveMnt2, defaultResidentialProfile, 'LACET_MONTAGNE_2');
+      net.createRoad(mntPeak.id, mntStage2.id, curveMnt3, defaultResidentialProfile, 'LACET_MONTAGNE_3');
+      net.createRoad(mntStage2.id, mntExit.id, curveMnt4, defaultResidentialProfile, 'LACET_MONTAGNE_4');
+
+      // =========================================================================
+      // 5. QUARTIER D'AFFAIRES DOWNTOWN MANHATTAN TOTALEMENT MAILLÉ (EST)
+      // =========================================================================
+      const dtC1 = net.createNode(new Vector2D(80, 0), 'four_way', 'Carrefour Finance 1');
+      const dtC2 = net.createNode(new Vector2D(160, 0), 'four_way', 'Carrefour Finance 2');
+      const dtC3 = net.createNode(new Vector2D(240, 0), 'four_way', 'Carrefour Finance 3');
+
+      net.createRoad(rndC.id, dtC1.id, new LinearCurve(rndC.position, dtC1.position), fourLaneAvenueProfile, 'AV_FINANCE_1');
+      net.createRoad(dtC1.id, dtC2.id, new LinearCurve(dtC1.position, dtC2.position), fourLaneAvenueProfile, 'AV_FINANCE_2');
+      net.createRoad(dtC2.id, dtC3.id, new LinearCurve(dtC2.position, dtC3.position), fourLaneAvenueProfile, 'AV_FINANCE_3');
+
+      // Ligne Nord Est
+      const dtN1 = net.createNode(new Vector2D(80, 170), 'four_way', 'Carrefour Nord 1');
+      const dtN2 = net.createNode(new Vector2D(160, 170), 'four_way', 'Carrefour Nord 2');
+      const dtN3 = orgBranch2; // Reconnexion directe de la branche organique !
+
+      net.createRoad(rndN.id, dtN1.id, new LinearCurve(rndN.position, dtN1.position), fourLaneAvenueProfile, 'BD_NE_1');
+      net.createRoad(dtN1.id, dtN2.id, new LinearCurve(dtN1.position, dtN2.position), fourLaneAvenueProfile, 'BD_NE_2');
+      net.createRoad(dtN2.id, dtN3.id, new LinearCurve(dtN2.position, dtN3.position), fourLaneAvenueProfile, 'BD_NE_3');
+
+      // Ligne Sud Est
+      const dtS1 = net.createNode(new Vector2D(80, -170), 'four_way', 'Carrefour Sud 1');
+      const dtS2 = net.createNode(new Vector2D(160, -170), 'four_way', 'Carrefour Sud 2');
+      const dtS3 = mntExit; // Reconnexion directe de la sortie des lacets de montagne !
+
+      net.createRoad(rndS.id, dtS1.id, new LinearCurve(rndS.position, dtS1.position), fourLaneAvenueProfile, 'BD_SE_1');
+      net.createRoad(dtS1.id, dtS2.id, new LinearCurve(dtS1.position, dtS2.position), fourLaneAvenueProfile, 'BD_SE_2');
+      net.createRoad(dtS2.id, dtS3.id, new LinearCurve(dtS2.position, dtS3.position), fourLaneAvenueProfile, 'BD_SE_3');
+
+      // Avenues transversales Nord-Sud
+      net.createRoad(dtN1.id, dtC1.id, new LinearCurve(dtN1.position, dtC1.position), defaultResidentialProfile, 'RUE_N1_C1');
+      net.createRoad(dtC1.id, dtS1.id, new LinearCurve(dtC1.position, dtS1.position), defaultResidentialProfile, 'RUE_C1_S1');
+
+      net.createRoad(dtN2.id, dtC2.id, new LinearCurve(dtN2.position, dtC2.position), defaultResidentialProfile, 'RUE_N2_C2');
+      net.createRoad(dtC2.id, dtS2.id, new LinearCurve(dtC2.position, dtS2.position), defaultResidentialProfile, 'RUE_C2_S2');
+
+      net.createRoad(dtN3.id, dtC3.id, new LinearCurve(dtN3.position, dtC3.position), fourLaneAvenueProfile, 'PERIPH_EST_NORD');
+      net.createRoad(dtC3.id, dtS3.id, new LinearCurve(dtC3.position, dtS3.position), fourLaneAvenueProfile, 'PERIPH_EST_SUD');
+
+      // =========================================================================
+      // 6. CONSTRUCTION, FEUX TRICOLORES & TRAFIC MULTI-AGENTS (V0.3, V0.5, V0.8)
       // =========================================================================
       engine.build();
 
-      // Flotte dense de 80 véhicules autonomes circulant en continu
+      // Régulation par feux tricolores synchronisés Downtown
+      engine.regulation.setPriorityRule(dtC1.id, 'traffic_light', [], dtC1.connectedRoadIds, 'Feux Finance 1');
+      engine.regulation.setPriorityRule(dtC2.id, 'traffic_light', [], dtC2.connectedRoadIds, 'Feux Finance 2');
+      engine.regulation.setPriorityRule(dtN2.id, 'traffic_light', [], dtN2.connectedRoadIds, 'Feux Nord 2');
+      engine.regulation.setPriorityRule(dtS2.id, 'traffic_light', [], dtS2.connectedRoadIds, 'Feux Sud 2');
+      engine.trafficLights.build();
+
+      // Flotte de 80 véhicules autonomes circulant en continu
       engine.traffic.config.maxVehicles = 80;
       engine.traffic.config.spawnIntervalSeconds = 0.6;
 
