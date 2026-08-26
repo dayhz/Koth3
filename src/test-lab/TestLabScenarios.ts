@@ -2,6 +2,7 @@ import { Vector2D } from '../core/math/Vector2D';
 import { LinearCurve, CubicBezierCurve } from '../core/curves/Curve';
 import { RoadWorldEngine } from '../engine/RoadWorldEngine';
 import { RoadProfile } from '../engine/types';
+import { CityBuilder } from '../engine/procedural/CityBuilder';
 
 export interface TestScenario {
   id: string;
@@ -314,6 +315,42 @@ export const TEST_SCENARIOS: TestScenario[] = [
       engine.network.createRoad(rNorth.id, centerBridge.id, new LinearCurve(rNorth.position, centerBridge.position), defaultResidentialProfile, 'R_RAMPE_N');
 
       engine.build();
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-14',
+    name: 'Ville Procédurale en Grille Manhattan (16 Blocs Urbains)',
+    category: 'Génération Procédurale V0.7',
+    description: 'Grille urbaine complète 4x4 avec alternance avenues 4 voies et rues secondaires, trottoirs, passages piétons et carrefours régulés.',
+    expectedResult: 'Trame viaire dense, géométriquement parfaite, avec congés de trottoirs et marquages complets.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(114);
+      CityBuilder.createGridCity(engine, { rows: 4, cols: 4, blockSizeX: 70, blockSizeY: 55 }, 114);
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-15',
+    name: 'Réseau Routier Organique & Sinueux (Quartier Historique)',
+    category: 'Génération Procédurale V0.7',
+    description: 'Génération procédurale de grandes artères en courbes de Bézier avec embranchements et fusion de carrefours.',
+    expectedResult: 'Structure urbaine fluide et naturelle sans cassure de courbure.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(115);
+      CityBuilder.createOrganicCity(engine, { mainArteriesCount: 3, branchesPerArtery: 3, snapDistance: 12 }, 115);
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-16',
+    name: 'Réseau Radial-Concentrique (Périphérique & Radiales)',
+    category: 'Génération Procédurale V0.7',
+    description: 'Giratoire central, 2 anneaux de boulevards circulaires concentriques et 6 artères radiales connectées.',
+    expectedResult: 'Réseau concentrique symétrique avec giratoire, arcs de cercle et carrefours régulés.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(116);
+      CityBuilder.createRadialCity(engine, { centerRadius: 20, ringRadii: [60, 100], spokesCount: 6 });
       return engine;
     },
   },
