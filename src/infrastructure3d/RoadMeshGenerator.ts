@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoadSegment } from '../engine/RoadSegment';
 import { UVManager } from './UVManager';
 import { LODLevel, MeshMetadata } from './types';
+import { RoadSegmenter } from './RoadSegmenter';
 
 export interface RoadMeshOptions {
   lod?: LODLevel;
@@ -14,37 +15,29 @@ export class RoadMeshGenerator {
    */
   static generate(road: RoadSegment, options: RoadMeshOptions = {}): THREE.Mesh[] {
     const lod = options.lod || 'LOD0';
-    const segmentLength = options.segmentLengthMeters || 20.0; // Découpage tous les 20m
+    const segmentLength = options.segmentLengthMeters || 25.0; // Découpage paramétrique
 
-    const roadLength = road.length;
-    const numSegments = Math.max(1, Math.ceil(roadLength / segmentLength));
-    const dt = (road.tEnd - road.tStart) / numSegments;
-
+    const slices = RoadSegmenter.segmentRoad(road, segmentLength);
     const samplesPerSegment = lod === 'LOD0' ? 16 : lod === 'LOD1' ? 8 : 4;
     const halfWidth = road.totalWidth / 2;
 
     const meshes: THREE.Mesh[] = [];
 
-    for (let seg = 0; seg < numSegments; seg++) {
-      const tStart = road.tStart + seg * dt;
-      const tEnd = road.tStart + (seg + 1) * dt;
-
+    for (const slice of slices) {
       const positions: number[] = [];
       const arcLengths: number[] = [];
       const indices: number[] = [];
 
-      let currentArc = seg * segmentLength;
-
       for (let i = 0; i <= samplesPerSegment; i++) {
         const localT = i / samplesPerSegment;
-        const globalT = tStart + localT * (tEnd - tStart);
+        const globalT = slice.tStart + localT * (slice.tEnd - slice.tStart);
 
         const point = road.centerline.getPoint(globalT);
         const tangent = road.centerline.getTangent(globalT);
         const normal2D = new THREE.Vector2(-tangent.y, tangent.x).normalize();
         const elevation = road.centerline.getElevation(globalT);
 
-        // Profil en travers (Dévers de -2.5% ou banking en virage)
+        // Profil en travers (Dévers de -2.5% ou banking)
         const leftPoint = new THREE.Vector3(
           point.x + normal2D.x * halfWidth,
           elevation - halfWidth * 0.025,
@@ -61,8 +54,8 @@ export class RoadMeshGenerator {
         positions.push(centerPoint.x, centerPoint.y, centerPoint.z);
         positions.push(rightPoint.x, rightPoint.y, rightPoint.z);
 
-        const stepDist = (roadLength / numSegments) / samplesPerSegment;
-        arcLengths.push(currentArc + i * stepDist);
+        const currentArc = slice.sStart + localT * (slice.sEnd - slice.sStart);
+        arcLengths.push(currentArc);
 
         if (i > 0) {
           const row0 = (i - 1) * 3;
@@ -89,7 +82,7 @@ export class RoadMeshGenerator {
       geometry.computeVertexNormals();
 
       const mesh = new THREE.Mesh(geometry);
-      mesh.name = `RoadMesh_${road.id}_seg_${seg}`;
+      mesh.name = `RoadMesh_${road.id}_seg_${slice.index}`;
       mesh.receiveShadow = true;
 
       const metadata: MeshMetadata = {
@@ -97,7 +90,7 @@ export class RoadMeshGenerator {
         type: 'road',
         sourceId: road.id,
         lod,
-        chunk: { cx: Math.floor(positions[0] / 100), cz: Math.floor(positions[2] / 100) },
+        chunk: { cx: Math.floor(slice.bounds.min.x / 100), cz: Math.floor(slice.bounds.min.z / 100) },
       };
       mesh.userData = metadata;
 
