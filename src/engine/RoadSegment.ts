@@ -9,6 +9,12 @@ export class RoadSegment {
   public rightSidewalkId?: string;
   public markingIds: string[] = [];
   
+  // Intervalles utiles après recul aux intersections
+  public startSetback: number = 0;
+  public endSetback: number = 0;
+  public tStart: number = 0;
+  public tEnd: number = 1;
+
   // Polygone d'emprise asphaltique calculé
   public surfacePolygon: Polygon2D = new Polygon2D();
   public leftBoundary: Vector2D[] = [];
@@ -33,6 +39,20 @@ export class RoadSegment {
 
   get length(): number {
     return this.centerline.getLength();
+  }
+
+  updateSetbacks(startSetback: number, endSetback: number): void {
+    const len = this.length;
+    this.startSetback = startSetback;
+    this.endSetback = endSetback;
+
+    // Limiter le recul à 45% de la longueur max de chaque côté
+    const maxCut = len * 0.45;
+    const clampedStart = Math.min(startSetback, maxCut);
+    const clampedEnd = Math.min(endSetback, maxCut);
+
+    this.tStart = len > 0 ? clampedStart / len : 0;
+    this.tEnd = len > 0 ? 1.0 - clampedEnd / len : 1;
   }
 
   toJSON() {

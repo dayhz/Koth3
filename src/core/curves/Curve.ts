@@ -15,7 +15,7 @@ export interface ICurve {
   getNormal(t: number): Vector2D;
   getLength(): number;
   samplePoints(numSamples?: number): Vector2D[];
-  sampleFrames(numSamples?: number): CurveFrame[];
+  sampleFrames(numSamples?: number, tStart?: number, tEnd?: number): CurveFrame[];
   clone(): ICurve;
 }
 
@@ -58,7 +58,7 @@ export class LinearCurve implements ICurve {
     return pts;
   }
 
-  sampleFrames(numSamples: number = 10): CurveFrame[] {
+  sampleFrames(numSamples: number = 10, tStart: number = 0, tEnd: number = 1): CurveFrame[] {
     const frames: CurveFrame[] = [];
     const count = Math.max(2, numSamples);
     const len = this.getLength();
@@ -66,7 +66,8 @@ export class LinearCurve implements ICurve {
     const normal = this.getNormal(0);
 
     for (let i = 0; i < count; i++) {
-      const t = i / (count - 1);
+      const alpha = i / (count - 1);
+      const t = tStart + alpha * (tEnd - tStart);
       frames.push({
         point: this.getPoint(t),
         tangent,
@@ -120,7 +121,6 @@ export class CubicBezierCurve implements ICurve {
     const mt2 = mt * mt;
     const t2 = t * t;
 
-    // B'(t) = 3(1-t)^2 (P1 - P0) + 6(1-t)t (P2 - P1) + 3t^2 (P3 - P2)
     return new Vector2D(
       3 * mt2 * (this.p1.x - this.p0.x) + 6 * mt * t * (this.p2.x - this.p1.x) + 3 * t2 * (this.p3.x - this.p2.x),
       3 * mt2 * (this.p1.y - this.p0.y) + 6 * mt * t * (this.p2.y - this.p1.y) + 3 * t2 * (this.p3.y - this.p2.y)
@@ -164,14 +164,15 @@ export class CubicBezierCurve implements ICurve {
     return pts;
   }
 
-  sampleFrames(numSamples: number = 24): CurveFrame[] {
+  sampleFrames(numSamples: number = 24, tStart: number = 0, tEnd: number = 1): CurveFrame[] {
     const frames: CurveFrame[] = [];
     const count = Math.max(2, numSamples);
     let totalDist = 0;
     let prevPt: Vector2D | null = null;
 
     for (let i = 0; i < count; i++) {
-      const t = i / (count - 1);
+      const alpha = i / (count - 1);
+      const t = tStart + alpha * (tEnd - tStart);
       const point = this.getPoint(t);
       if (prevPt) {
         totalDist += prevPt.distanceTo(point);
@@ -259,13 +260,14 @@ export class ArcCurve implements ICurve {
     return pts;
   }
 
-  sampleFrames(numSamples: number = 24): CurveFrame[] {
+  sampleFrames(numSamples: number = 24, tStart: number = 0, tEnd: number = 1): CurveFrame[] {
     const frames: CurveFrame[] = [];
     const count = Math.max(2, numSamples);
     const len = this.getLength();
 
     for (let i = 0; i < count; i++) {
-      const t = i / (count - 1);
+      const alpha = i / (count - 1);
+      const t = tStart + alpha * (tEnd - tStart);
       frames.push({
         point: this.getPoint(t),
         tangent: this.getTangent(t),

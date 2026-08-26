@@ -198,13 +198,23 @@ export class ThreeRenderer {
       this.intersectionGroup.add(mesh);
     }
 
-    // 4. Trottoirs (Béton)
+    // 4. Trottoirs & Îlots séparateurs (Béton)
     for (const sidewalk of network.sidewalks.values()) {
       const geom = MeshGenerators.createSidewalkMesh(sidewalk);
       const mesh = new THREE.Mesh(geom, this.sidewalkMat);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       this.sidewalkGroup.add(mesh);
+    }
+
+    for (const node of network.nodes.values()) {
+      for (const island of node.splitterIslands) {
+        const geom = MeshGenerators.createSplitterIslandMesh(island);
+        const mesh = new THREE.Mesh(geom, this.sidewalkMat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        this.sidewalkGroup.add(mesh);
+      }
     }
 
     // 5. Marquages au sol (Blanc)

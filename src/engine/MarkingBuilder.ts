@@ -11,6 +11,8 @@ export class MarkingBuilder {
       road.markingIds = [];
       const laneCount = road.profile.laneCount;
       const laneWidth = road.profile.laneWidth;
+      const tStart = road.tStart;
+      const tEnd = road.tEnd;
 
       // 1. Ligne centrale
       if (laneCount >= 2) {
@@ -22,7 +24,9 @@ export class MarkingBuilder {
           0.15,
           road.id,
           undefined,
-          [3.0, 3.0] // 3m trait, 3m espace
+          [3.0, 3.0],
+          tStart,
+          tEnd
         );
         network.markings.set(id, marking);
         road.markingIds.push(id);
@@ -33,14 +37,14 @@ export class MarkingBuilder {
         // Ligne entre voie -2 et voie -1 (offset +1.0 * laneWidth)
         const idLeft = `M_${markingCounter++}`;
         const leftCurve = CurveOffset.offsetCurve(road.centerline, laneWidth);
-        const markLeft = new RoadMarking(idLeft, 'lane_dashed', leftCurve, 0.12, road.id, undefined, [2.0, 4.0]);
+        const markLeft = new RoadMarking(idLeft, 'lane_dashed', leftCurve, 0.12, road.id, undefined, [2.0, 4.0], tStart, tEnd);
         network.markings.set(idLeft, markLeft);
         road.markingIds.push(idLeft);
 
         // Ligne entre voie 1 et voie 2 (offset -1.0 * laneWidth)
         const idRight = `M_${markingCounter++}`;
         const rightCurve = CurveOffset.offsetCurve(road.centerline, -laneWidth);
-        const markRight = new RoadMarking(idRight, 'lane_dashed', rightCurve, 0.12, road.id, undefined, [2.0, 4.0]);
+        const markRight = new RoadMarking(idRight, 'lane_dashed', rightCurve, 0.12, road.id, undefined, [2.0, 4.0], tStart, tEnd);
         network.markings.set(idRight, markRight);
         road.markingIds.push(idRight);
       }

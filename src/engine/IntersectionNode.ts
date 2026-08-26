@@ -1,6 +1,6 @@
 import { Vector2D } from '../core/math/Vector2D';
 import { Polygon2D } from '../core/polygon/Polygon2D';
-import { IntersectionArm, IntersectionType, RoundaboutConfig } from './types';
+import { CurbReturnData, IntersectionArm, IntersectionType, RoundaboutConfig, SplitterIsland } from './types';
 
 export class IntersectionNode {
   public connectedRoadIds: string[] = [];
@@ -8,6 +8,9 @@ export class IntersectionNode {
   public surfacePolygon: Polygon2D = new Polygon2D();
   public laneConnectionIds: string[] = [];
   public roundaboutConfig?: RoundaboutConfig;
+  public curbReturns: CurbReturnData[] = [];
+  public splitterIslands: SplitterIsland[] = [];
+  public curbRadius: number = 5.0; // Rayon de congé standard (5 mètres)
 
   constructor(
     public readonly id: string,
@@ -53,9 +56,12 @@ export class IntersectionNode {
       position: this.position.toJSON(),
       type: this.type,
       name: this.name,
+      curbRadius: this.curbRadius,
       connectedRoadIds: this.connectedRoadIds,
       arms: this.arms,
       roundaboutConfig: this.roundaboutConfig,
+      curbReturns: this.curbReturns,
+      splitterIslands: this.splitterIslands,
       laneConnectionIds: this.laneConnectionIds,
     };
   }

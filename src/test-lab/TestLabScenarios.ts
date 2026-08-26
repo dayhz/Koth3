@@ -86,13 +86,15 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-04',
-    name: 'Intersection en T',
-    category: 'Intersections',
-    description: 'Jonction orthogonale à 3 branches avec calcul des congés de trottoir et connexions de voies.',
-    expectedResult: 'Polygone de carrefour fermé, 3 branches connectées, connexions de virage gauche/droite calculées.',
+    name: 'Intersection en T (Congés Arrondis)',
+    category: 'Intersections V0.2',
+    description: 'Jonction en T avec calcul de congés de trottoir arrondis tangents (R = 5m).',
+    expectedResult: 'Coins de trottoir arrondis fluides, connexions de virage gauche et droite réalistes.',
     createEngine: () => {
       const engine = new RoadWorldEngine(104);
       const center = engine.network.createNode(new Vector2D(0, 0), 't_junction', 'CARREFOUR_T');
+      center.curbRadius = 6.0;
+
       const west = engine.network.createNode(new Vector2D(-50, 0), 'dead_end', 'WEST');
       const east = engine.network.createNode(new Vector2D(50, 0), 'dead_end', 'EAST');
       const north = engine.network.createNode(new Vector2D(0, 50), 'dead_end', 'NORTH');
@@ -107,13 +109,15 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-05',
-    name: 'Carrefour en X (4 Voies)',
-    category: 'Intersections',
-    description: 'Croisement orthogonal complet reliant 4 routes bidirectionnelles.',
-    expectedResult: 'Carrefour 4-way régulier avec 12 trajectoires de virages possibles (tout droit, gauche, droite).',
+    name: 'Carrefour en X (4 Congés Arrondis)',
+    category: 'Intersections V0.2',
+    description: 'Croisement orthogonal complet avec 4 congés de trottoir tangents de 5m de rayon.',
+    expectedResult: 'Surface de carrefour aux 4 coins adoucis, 12 trajectoires de virages calculées.',
     createEngine: () => {
       const engine = new RoadWorldEngine(105);
       const center = engine.network.createNode(new Vector2D(0, 0), 'four_way', 'CARREFOUR_X');
+      center.curbRadius = 5.0;
+
       const west = engine.network.createNode(new Vector2D(-50, 0), 'dead_end', 'W');
       const east = engine.network.createNode(new Vector2D(50, 0), 'dead_end', 'E');
       const north = engine.network.createNode(new Vector2D(0, 50), 'dead_end', 'N');
@@ -130,13 +134,15 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-06',
-    name: 'Carrefour Asymétrique (3 Branches Obliques)',
-    category: 'Intersections',
-    description: 'Jonction de routes avec des angles obliques non orthogonaux (ex: 60° et 120°).',
-    expectedResult: 'Polygone de carrefour correctement adapté aux angles sans inversion de normales.',
+    name: 'Carrefour en Y Oblique (Angles Asymétriques)',
+    category: 'Intersections V0.2',
+    description: 'Carrefour à 3 branches obliques non orthogonales avec calcul des congés adaptés.',
+    expectedResult: 'Congés asymétriques adaptés aux angles aigus et obtus sans inversion de normales.',
     createEngine: () => {
       const engine = new RoadWorldEngine(106);
-      const center = engine.network.createNode(new Vector2D(0, 0), 't_junction', 'ASYM_NODE');
+      const center = engine.network.createNode(new Vector2D(0, 0), 't_junction', 'Y_NODE');
+      center.curbRadius = 4.0;
+
       const b1 = engine.network.createNode(new Vector2D(-45, -20), 'dead_end', 'B1');
       const b2 = engine.network.createNode(new Vector2D(50, 0), 'dead_end', 'B2');
       const b3 = engine.network.createNode(new Vector2D(-20, 50), 'dead_end', 'B3');
@@ -151,22 +157,24 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-07',
-    name: 'Rond-Point Giratoire (4 Branches)',
-    category: 'Giratoires',
-    description: 'Anneau circulaire avec 4 voies affluentes tangentielles.',
-    expectedResult: 'Surface annulaire, voies d’entrée/sortie connectées et îlot central défini.',
+    name: 'Giratoire avec Îlots Séparateurs (Splitter Islands)',
+    category: 'Giratoires V0.2',
+    description: 'Rond-point giratoire avec 4 îlots séparateurs triangulaires surélevés guidant les entrées/sorties.',
+    expectedResult: 'Anneau circulaire et 4 îlots séparateurs 3D géométriquement parfaits.',
     createEngine: () => {
       const engine = new RoadWorldEngine(107);
-      const rbNode = engine.network.createRoundaboutNode(new Vector2D(0, 0), 20, 10, 1, 'ROND_POINT');
-      const w = engine.network.createNode(new Vector2D(-60, 0), 'dead_end', 'W');
-      const e = engine.network.createNode(new Vector2D(60, 0), 'dead_end', 'E');
-      const n = engine.network.createNode(new Vector2D(0, 60), 'dead_end', 'N');
-      const s = engine.network.createNode(new Vector2D(0, -60), 'dead_end', 'S');
+      const rbNode = engine.network.createRoundaboutNode(new Vector2D(0, 0), 22, 12, 1, 'ROND_POINT');
+      rbNode.roundaboutConfig!.hasSplitterIslands = true;
 
-      engine.network.createRoad(w.id, rbNode.id, new LinearCurve(w.position, new Vector2D(-20, 0)), defaultResidentialProfile, 'R_RB_W');
-      engine.network.createRoad(rbNode.id, e.id, new LinearCurve(new Vector2D(20, 0), e.position), defaultResidentialProfile, 'R_RB_E');
-      engine.network.createRoad(n.id, rbNode.id, new LinearCurve(n.position, new Vector2D(0, 20)), defaultResidentialProfile, 'R_RB_N');
-      engine.network.createRoad(rbNode.id, s.id, new LinearCurve(new Vector2D(0, -20), s.position), defaultResidentialProfile, 'R_RB_S');
+      const w = engine.network.createNode(new Vector2D(-65, 0), 'dead_end', 'W');
+      const e = engine.network.createNode(new Vector2D(65, 0), 'dead_end', 'E');
+      const n = engine.network.createNode(new Vector2D(0, 65), 'dead_end', 'N');
+      const s = engine.network.createNode(new Vector2D(0, -65), 'dead_end', 'S');
+
+      engine.network.createRoad(w.id, rbNode.id, new LinearCurve(w.position, new Vector2D(-22, 0)), defaultResidentialProfile, 'R_RB_W');
+      engine.network.createRoad(rbNode.id, e.id, new LinearCurve(new Vector2D(22, 0), e.position), defaultResidentialProfile, 'R_RB_E');
+      engine.network.createRoad(n.id, rbNode.id, new LinearCurve(n.position, new Vector2D(0, 22)), defaultResidentialProfile, 'R_RB_N');
+      engine.network.createRoad(rbNode.id, s.id, new LinearCurve(new Vector2D(0, -22), s.position), defaultResidentialProfile, 'R_RB_S');
 
       engine.build();
       return engine;
@@ -176,8 +184,8 @@ export const TEST_SCENARIOS: TestScenario[] = [
     id: 'TEST-08',
     name: 'Boucle Réseau Fermée (Îlot Urbain 4 Carrefours)',
     category: 'Réseau Topologique',
-    description: 'Quadrilatère de 4 routes formant un cycle fermé complet.',
-    expectedResult: 'Graphe cyclique sans discontinuité, 4 carrefours connectés, surface intérieure délimitée.',
+    description: 'Quadrilatère de 4 routes formant un cycle fermé avec congés de trottoir aux 4 intersections.',
+    expectedResult: 'Graphe cyclique sans discontinuité, 4 carrefours connectés et arrondis.',
     createEngine: () => {
       const engine = new RoadWorldEngine(108);
       const nNW = engine.network.createNode(new Vector2D(-40, 40), 'four_way', 'N_NW');
@@ -196,10 +204,10 @@ export const TEST_SCENARIOS: TestScenario[] = [
   },
   {
     id: 'TEST-09',
-    name: 'Continuité des Trottoirs Piétons',
+    name: 'Continuité Trottoirs & Carrefours',
     category: 'Infrastructure Piétonne',
-    description: 'Vérification de la présence et cohérence des trottoirs le long de carrefours en T et virages.',
-    expectedResult: 'Tous les trottoirs sont modélisés avec bordure surélevée (15cm) et géométrie connexe.',
+    description: 'Vérification de la continuité des trottoirs piétons longeant les carrefours en T et courbes.',
+    expectedResult: 'Trottoirs surélevés (15cm) continus et connectés le long des branches.',
     createEngine: () => {
       const engine = new RoadWorldEngine(109);
       const n1 = engine.network.createNode(new Vector2D(-40, 0), 'dead_end', 'N1');
@@ -225,12 +233,12 @@ export const TEST_SCENARIOS: TestScenario[] = [
     createEngine: () => {
       const engine = new RoadWorldEngine(110);
       const n1 = engine.network.createNode(new Vector2D(0, 0), 'dead_end', 'N1');
-      const n2 = engine.network.createNode(new Vector2D(0.4, 0), 'dead_end', 'N2'); // < 1.0m
+      const n2 = engine.network.createNode(new Vector2D(0.4, 0), 'dead_end', 'N2');
 
       const invalidProfile: RoadProfile = {
         roadType: 'narrow',
         laneCount: 1,
-        laneWidth: 1.2, // < 2.0m (trop étroit)
+        laneWidth: 1.2,
         sidewalkWidthLeft: 0,
         sidewalkWidthRight: 0,
         curbHeight: 0.15,

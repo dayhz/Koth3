@@ -22,9 +22,9 @@ export class DebugRenderer {
     // 1. Centerlines de routes (jaune)
     if (this.showCenterlines) {
       for (const road of network.roads.values()) {
-        const pts = road.centerline.samplePoints(24);
+        const frames = road.centerline.sampleFrames(24, road.tStart, road.tEnd);
         const geom = new THREE.BufferGeometry().setFromPoints(
-          pts.map((p) => new THREE.Vector3(p.x, 0.05, p.y))
+          frames.map((f) => new THREE.Vector3(f.point.x, 0.05, f.point.y))
         );
         const mat = new THREE.LineBasicMaterial({ color: 0xffcc00, linewidth: 2 });
         const line = new THREE.Line(geom, mat);

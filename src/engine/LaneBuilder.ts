@@ -2,7 +2,7 @@ import { CubicBezierCurve } from '../core/curves/Curve';
 import { CurveOffset } from '../core/curves/CurveOffset';
 import { RoadNetwork } from './RoadNetwork';
 import { Lane } from './Lane';
-import { LaneConnection, LaneDirection } from './types';
+import { LaneAllowedMovement, LaneConnection, LaneDirection } from './types';
 
 export class LaneBuilder {
   static buildLanes(network: RoadNetwork): void {
@@ -25,22 +25,20 @@ export class LaneBuilder {
         network.lanes.set(id, lane);
         road.laneIds.push(id);
       } else if (laneCount === 2) {
-        // 2 voies : 1 sens direct (droite de l'axe), 1 sens inverse (gauche de l'axe)
-        // Voie retour (backward) : à gauche de l'axe (+laneWidth/2)
+        // 2 voies : 1 sens inverse (+width/2), 1 sens direct (-width/2)
         const idBack = `L_${laneCounter++}`;
         const backCurve = CurveOffset.offsetCurve(road.centerline, laneWidth / 2);
         const laneBack = new Lane(idBack, road.id, -1, 'backward', laneWidth, backCurve, road.profile.speedLimitKmH);
         network.lanes.set(idBack, laneBack);
         road.laneIds.push(idBack);
 
-        // Voie aller (forward) : à droite de l'axe (-laneWidth/2)
         const idFwd = `L_${laneCounter++}`;
         const fwdCurve = CurveOffset.offsetCurve(road.centerline, -laneWidth / 2);
         const laneFwd = new Lane(idFwd, road.id, 1, 'forward', laneWidth, fwdCurve, road.profile.speedLimitKmH);
         network.lanes.set(idFwd, laneFwd);
         road.laneIds.push(idFwd);
       } else if (laneCount === 4) {
-        // 4 voies : 2 voies retour (+1.5w, +0.5w), 2 voies aller (-0.5w, -1.5w)
+        // 4 voies
         const offsets: { index: number; dir: LaneDirection; offset: number }[] = [
           { index: -2, dir: 'backward', offset: 1.5 * laneWidth },
           { index: -1, dir: 'backward', offset: 0.5 * laneWidth },
@@ -58,14 +56,13 @@ export class LaneBuilder {
       }
     }
 
-    // 2. Générer les connexions de voies à travers les intersections
+    // 2. Générer les trajectoires de carrefour avec classification du mouvement
     for (const node of network.nodes.values()) {
       node.laneConnectionIds = [];
       const { incoming, outgoing } = network.getLanesConnectedToIntersection(node.id);
 
       for (const inLane of incoming) {
         for (const outLane of outgoing) {
-          // Éviter le demi-tour immédiat sur la même route si d'autres options existent
           if (inLane.parentRoadId === outLane.parentRoadId && outgoing.length > 1) {
             continue;
           }
@@ -74,16 +71,16 @@ export class LaneBuilder {
           const outRoad = network.roads.get(outLane.parentRoadId);
           if (!inRoad || !outRoad) continue;
 
-          // Point d'arrivée de inLane au carrefour
+          // Point et tangente d'arrivée de inLane au carrefour
           const pStart = inLane.direction === 'forward'
             ? inLane.centerline.getPoint(1)
             : inLane.centerline.getPoint(0);
-          
+
           const tStart = inLane.direction === 'forward'
             ? inLane.centerline.getTangent(1)
             : inLane.centerline.getTangent(0).multiplyScalar(-1);
 
-          // Point de départ de outLane depuis le carrefour
+          // Point et tangente de départ de outLane depuis le carrefour
           const pEnd = outLane.direction === 'forward'
             ? outLane.centerline.getPoint(0)
             : outLane.centerline.getPoint(1);
@@ -92,9 +89,24 @@ export class LaneBuilder {
             ? outLane.centerline.getTangent(0)
             : outLane.centerline.getTangent(1).multiplyScalar(-1);
 
-          // Créer une trajectoire cubique Bézier fluide entre l'entrée et la sortie du carrefour
+          // Classification du mouvement selon la variation d'angle (inTangent vs outTangent)
+          const angleIn = Math.atan2(tStart.y, tStart.x);
+          const angleOut = Math.atan2(tEnd.y, tEnd.x);
+          let deltaAngle = angleOut - angleIn;
+          while (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+          while (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+
+          let movement: LaneAllowedMovement = 'straight';
+          if (deltaAngle > 0.4) {
+            movement = 'turn_left';
+          } else if (deltaAngle < -0.4) {
+            movement = 'turn_right';
+          }
+
+          // Trajectoire Bézier cubique avec poignées tangentielles adaptées au rayon de virage
           const dist = pStart.distanceTo(pEnd);
-          const handleLen = Math.max(1.0, dist * 0.4);
+          const handleFactor = movement === 'straight' ? 0.35 : 0.45;
+          const handleLen = Math.max(1.5, dist * handleFactor);
 
           const cp1 = pStart.addScaled(tStart, handleLen);
           const cp2 = pEnd.addScaled(tEnd, -handleLen);
@@ -107,7 +119,7 @@ export class LaneBuilder {
             intersectionId: node.id,
             fromLaneId: inLane.id,
             toLaneId: outLane.id,
-            movement: 'straight', // ou calcul d'angle
+            movement,
             trajectory,
           };
 

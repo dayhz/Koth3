@@ -3,11 +3,17 @@ import { ICurve, LinearCurve, CubicBezierCurve, ArcCurve } from './Curve';
 
 export class CurveOffset {
   /**
-   * Calcule une série de points échantillonnés décalés d'une distance 'offset'
+   * Calcule une série de points échantillonnés décalés d'une distance 'offset' sur l'intervalle [tStart, tEnd]
    * (offset > 0 : vers la gauche de la courbe, offset < 0 : vers la droite).
    */
-  static sampleOffsetPoints(curve: ICurve, offset: number, numSamples: number = 24): Vector2D[] {
-    const frames = curve.sampleFrames(numSamples);
+  static sampleOffsetPoints(
+    curve: ICurve,
+    offset: number,
+    numSamples: number = 24,
+    tStart: number = 0,
+    tEnd: number = 1
+  ): Vector2D[] {
+    const frames = curve.sampleFrames(numSamples, tStart, tEnd);
     return frames.map((f) => f.point.addScaled(f.normal, offset));
   }
 
