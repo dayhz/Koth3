@@ -5,11 +5,11 @@ import { TrafficRegulationEngine } from '../engine/regulation/TrafficRegulationE
 export class DebugRenderer {
   public group: THREE.Group = new THREE.Group();
 
-  public showCenterlines: boolean = true;
-  public showLanes: boolean = true;
-  public showNodes: boolean = true;
-  public showIntersections: boolean = true;
-  public showPriorityBadges: boolean = true;
+  public showCenterlines: boolean = false;
+  public showLanes: boolean = false;
+  public showNodes: boolean = false;
+  public showIntersections: boolean = false;
+  public showPriorityBadges: boolean = false;
 
   update(network: RoadNetwork, regulation?: TrafficRegulationEngine): void {
     // Nettoyer les anciens objets

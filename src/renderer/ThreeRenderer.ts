@@ -6,6 +6,8 @@ import { TrafficLightRenderer } from './TrafficLightRenderer';
 import { VehicleRenderer } from './VehicleRenderer';
 import { TrafficLightEngine } from '../engine/traffic-lights/TrafficLightEngine';
 import { TrafficSimulation } from '../engine/traffic/TrafficSimulation';
+import { TrafficSign } from '../engine/signs/TrafficSignTypes';
+import { TrafficSignTextures } from './TrafficSignTextures';
 
 export class ThreeRenderer {
   public scene: THREE.Scene;
@@ -19,12 +21,17 @@ export class ThreeRenderer {
   private intersectionGroup: THREE.Group = new THREE.Group();
   private sidewalkGroup: THREE.Group = new THREE.Group();
   private markingGroup: THREE.Group = new THREE.Group();
+  private signGroup: THREE.Group = new THREE.Group();
 
   // Matériaux
   private asphaltMat: THREE.MeshStandardMaterial;
   private sidewalkMat: THREE.MeshStandardMaterial;
+  private curbMat: THREE.MeshStandardMaterial;
+  private grassMat: THREE.MeshStandardMaterial;
   private markingMat: THREE.MeshBasicMaterial;
   private groundMat: THREE.MeshStandardMaterial;
+  private poleMat: THREE.MeshStandardMaterial;
+  private signBackMat: THREE.MeshStandardMaterial;
 
   // Contrôle caméra orbital
   private isMouseDown = false;
@@ -82,15 +89,36 @@ export class ThreeRenderer {
       roughness: 0.7,
       metalness: 0.1,
     });
+    this.curbMat = new THREE.MeshStandardMaterial({
+      color: 0x6e7683,
+      roughness: 0.75,
+      metalness: 0.12,
+    });
+    this.grassMat = new THREE.MeshStandardMaterial({
+      color: 0x2e7d32, // Vert gazon naturel photoréaliste
+      roughness: 0.95,
+      metalness: 0.02,
+    });
     this.markingMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       side: THREE.DoubleSide,
+    });
+    this.poleMat = new THREE.MeshStandardMaterial({
+      color: 0x4a5568,
+      metalness: 0.8,
+      roughness: 0.3,
+    });
+    this.signBackMat = new THREE.MeshStandardMaterial({
+      color: 0x718096,
+      metalness: 0.6,
+      roughness: 0.4,
     });
 
     this.scene.add(this.roadGroup);
     this.scene.add(this.intersectionGroup);
     this.scene.add(this.sidewalkGroup);
     this.scene.add(this.markingGroup);
+    this.scene.add(this.signGroup);
 
     this.debugRenderer = new DebugRenderer();
     this.scene.add(this.debugRenderer.group);
@@ -208,10 +236,10 @@ export class ThreeRenderer {
       mesh.receiveShadow = true;
       this.intersectionGroup.add(mesh);
 
-      // Îlot central surélevé pour giratoires
+      // Îlot central surélevé paysager en gazon pour giratoires
       if (node.type === 'roundabout' && node.roundaboutConfig) {
         const islandGeom = MeshGenerators.createRoundaboutCentralIslandMesh(node);
-        const islandMesh = new THREE.Mesh(islandGeom, this.sidewalkMat);
+        const islandMesh = new THREE.Mesh(islandGeom, this.grassMat);
         islandMesh.castShadow = true;
         islandMesh.receiveShadow = true;
         this.intersectionGroup.add(islandMesh);
@@ -231,7 +259,7 @@ export class ThreeRenderer {
     for (const node of network.nodes.values()) {
       for (const island of node.splitterIslands) {
         const geom = MeshGenerators.createSplitterIslandMesh(island, node.elevation);
-        const mesh = new THREE.Mesh(geom, this.sidewalkMat);
+        const mesh = new THREE.Mesh(geom, this.curbMat);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         this.sidewalkGroup.add(mesh);
@@ -273,8 +301,53 @@ export class ThreeRenderer {
       this.trafficLightRenderer.clear();
     }
 
-    // 7. Debug
+    // 7. Panneaux de signalisation routière 3D physiques
+    this.clearGroup(this.signGroup);
+    if (regulation && regulation.network) {
+      // Les panneaux sont générés via RoadWorldEngine
+    }
+
+    // 8. Debug
     this.debugRenderer.update(network, regulation);
+  }
+
+  renderTrafficSigns(signs: Map<string, TrafficSign>): void {
+    this.clearGroup(this.signGroup);
+
+    for (const sign of signs.values()) {
+      const signMeshGroup = new THREE.Group();
+
+      // Mât métallique
+      const poleGeom = new THREE.CylinderGeometry(0.04, 0.04, sign.height, 8);
+      const pole = new THREE.Mesh(poleGeom, this.poleMat);
+      pole.position.set(0, sign.height / 2, 0);
+      pole.castShadow = true;
+      signMeshGroup.add(pole);
+
+      // Plaque de panneau
+      const texture = TrafficSignTextures.getTexture(sign.type);
+      const signFrontMat = new THREE.MeshStandardMaterial({
+        map: texture,
+        roughness: 0.2,
+        metalness: 0.1,
+      });
+
+      const plateGeom = new THREE.PlaneGeometry(0.7, 0.7);
+      const plateFront = new THREE.Mesh(plateGeom, signFrontMat);
+      plateFront.position.set(0, sign.height - 0.1, 0.03);
+      signMeshGroup.add(plateFront);
+
+      const plateBack = new THREE.Mesh(plateGeom, this.signBackMat);
+      plateBack.rotation.y = Math.PI;
+      plateBack.position.set(0, sign.height - 0.1, 0.02);
+      signMeshGroup.add(plateBack);
+
+      // Positionnement & Orientation
+      signMeshGroup.position.set(sign.position.x, sign.elevation, sign.position.y);
+      signMeshGroup.rotation.y = -sign.heading - Math.PI / 2;
+
+      this.signGroup.add(signMeshGroup);
+    }
   }
 
   updateTrafficLights(trafficLights: TrafficLightEngine): void {

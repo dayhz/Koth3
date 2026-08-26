@@ -9,6 +9,8 @@ import { TrafficLightEngine } from './traffic-lights/TrafficLightEngine';
 import { ElevationEngine } from './elevation/ElevationEngine';
 import { TrafficSimulation } from './traffic/TrafficSimulation';
 import { ExportHub } from './export/ExportHub';
+import { TrafficSign } from './signs/TrafficSignTypes';
+import { TrafficSignGenerator } from './signs/TrafficSignGenerator';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
@@ -16,6 +18,7 @@ export class RoadWorldEngine {
   public regulation: TrafficRegulationEngine;
   public trafficLights: TrafficLightEngine;
   public traffic: TrafficSimulation;
+  public signs: Map<string, TrafficSign> = new Map();
   public seed: number;
 
   constructor(seed: number = 482915) {
@@ -55,7 +58,10 @@ export class RoadWorldEngine {
     // 7. Feux tricolores dynamiques
     this.trafficLights.build();
 
-    // 8. Réinitialiser la simulation de trafic
+    // 8. Génération des panneaux de signalisation routière 3D
+    this.signs = TrafficSignGenerator.generate(this.network, this.regulation);
+
+    // 9. Réinitialiser la simulation de trafic
     this.traffic.clear();
   }
 

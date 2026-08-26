@@ -34,6 +34,7 @@ class App {
           this.currentEngine.regulation,
           this.currentEngine.trafficLights
         );
+        this.renderer.renderTrafficSigns(this.currentEngine.signs);
         this.updateStats();
         this.updateValidationReport();
       }
@@ -112,6 +113,7 @@ class App {
       this.currentEngine.regulation,
       this.currentEngine.trafficLights
     );
+    this.renderer.renderTrafficSigns(this.currentEngine.signs);
     this.renderer.resetCamera();
 
     this.updateStats();
