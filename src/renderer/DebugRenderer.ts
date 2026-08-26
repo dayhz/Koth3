@@ -54,9 +54,7 @@ export class DebugRenderer {
         // Flèche de direction au milieu
         const midPt = lane.centerline.getPoint(0.5);
         const midZ = parentRoad ? parentRoad.centerline.getElevation(0.5) : 0;
-        const dir = lane.direction === 'forward'
-          ? lane.centerline.getTangent(0.5)
-          : lane.centerline.getTangent(0.5).multiplyScalar(-1);
+        const dir = lane.centerline.getTangent(0.5);
 
         const arrow = new THREE.ArrowHelper(
           new THREE.Vector3(dir.x, 0, dir.y),

@@ -42,6 +42,7 @@ class App {
     if (!this.isSimulationPaused && this.currentEngine) {
       this.currentEngine.update(dt);
       this.renderer.updateTrafficLights(this.currentEngine.trafficLights);
+      this.renderer.updateTraffic(this.currentEngine.traffic);
     }
   };
 

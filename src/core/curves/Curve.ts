@@ -26,6 +26,7 @@ export interface ICurve {
   samplePoints(numSamples?: number): Vector2D[];
   sampleFrames(numSamples?: number, tStart?: number, tEnd?: number): CurveFrame[];
   clone(): ICurve;
+  reversed(): ICurve;
 }
 
 // ----------------------------------------------------
@@ -119,6 +120,10 @@ export class LinearCurve implements ICurve {
 
   clone(): LinearCurve {
     return new LinearCurve(this.start, this.end, this.startElevation, this.endElevation);
+  }
+
+  reversed(): LinearCurve {
+    return new LinearCurve(this.end, this.start, this.endElevation, this.startElevation);
   }
 }
 
@@ -266,6 +271,10 @@ export class CubicBezierCurve implements ICurve {
   clone(): CubicBezierCurve {
     return new CubicBezierCurve(this.p0, this.p1, this.p2, this.p3, this.startElevation, this.endElevation);
   }
+
+  reversed(): CubicBezierCurve {
+    return new CubicBezierCurve(this.p3, this.p2, this.p1, this.p0, this.endElevation, this.startElevation);
+  }
 }
 
 // ----------------------------------------------------
@@ -392,6 +401,18 @@ export class ArcCurve implements ICurve {
       this.clockwise,
       this.startElevation,
       this.endElevation
+    );
+  }
+
+  reversed(): ArcCurve {
+    return new ArcCurve(
+      this.center,
+      this.radius,
+      this.endAngle,
+      this.startAngle,
+      !this.clockwise,
+      this.endElevation,
+      this.startElevation
     );
   }
 }

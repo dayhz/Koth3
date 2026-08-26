@@ -354,4 +354,43 @@ export const TEST_SCENARIOS: TestScenario[] = [
       return engine;
     },
   },
+  {
+    id: 'TEST-17',
+    name: 'Trafic Dynamique Urbain en Grille Manhattan (IDM + Feux)',
+    category: 'Trafic Microscopique V0.8',
+    description: 'Simulation autonome de 30+ véhicules circulant sur une grille urbaine 4x4 avec modèle IDM, respect des feux tricolores et feux stop arrière.',
+    expectedResult: 'Véhicules 3D multicolores circulant en file indienne, freinant aux feux rouges et redémarrant aux feux verts.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(117);
+      CityBuilder.createGridCity(engine, { rows: 4, cols: 4, blockSizeX: 70, blockSizeY: 55 }, 117);
+      engine.traffic.config.maxVehicles = 40;
+      engine.traffic.config.spawnIntervalSeconds = 1.0;
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-18',
+    name: 'Trafic Continu en Giratoire Multi-Voies (Insertion & Sorties)',
+    category: 'Trafic Microscopique V0.8',
+    description: 'Véhicules autonomes s’insérant sur un rond-point à îlots séparateurs, tournant sur l’anneau et sortant de manière fluide.',
+    expectedResult: 'Circulation circulaire avec ralentissement à l’entrée et dégagement sans blocage.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(118);
+      const center = engine.network.createRoundaboutNode(new Vector2D(0, 0), 22, 12, 2, 'RND_TRAFFIC');
+      const w = engine.network.createNode(new Vector2D(-70, 0), 'dead_end', 'W');
+      const e = engine.network.createNode(new Vector2D(70, 0), 'dead_end', 'E');
+      const n = engine.network.createNode(new Vector2D(0, 70), 'dead_end', 'N');
+      const s = engine.network.createNode(new Vector2D(0, -70), 'dead_end', 'S');
+
+      engine.network.createRoad(w.id, center.id, new LinearCurve(w.position, center.position), defaultResidentialProfile, 'R_W');
+      engine.network.createRoad(center.id, e.id, new LinearCurve(center.position, e.position), defaultResidentialProfile, 'R_E');
+      engine.network.createRoad(n.id, center.id, new LinearCurve(n.position, center.position), defaultResidentialProfile, 'R_N');
+      engine.network.createRoad(center.id, s.id, new LinearCurve(center.position, s.position), defaultResidentialProfile, 'R_S');
+
+      engine.build();
+      engine.traffic.config.maxVehicles = 25;
+      engine.traffic.config.spawnIntervalSeconds = 1.2;
+      return engine;
+    },
+  },
 ];

@@ -3,7 +3,9 @@ import { RoadNetwork } from '../engine/RoadNetwork';
 import { MeshGenerators } from './MeshGenerators';
 import { DebugRenderer } from './DebugRenderer';
 import { TrafficLightRenderer } from './TrafficLightRenderer';
+import { VehicleRenderer } from './VehicleRenderer';
 import { TrafficLightEngine } from '../engine/traffic-lights/TrafficLightEngine';
+import { TrafficSimulation } from '../engine/traffic/TrafficSimulation';
 
 export class ThreeRenderer {
   public scene: THREE.Scene;
@@ -11,6 +13,7 @@ export class ThreeRenderer {
   public renderer: THREE.WebGLRenderer;
   public debugRenderer: DebugRenderer;
   public trafficLightRenderer: TrafficLightRenderer;
+  public vehicleRenderer: VehicleRenderer;
 
   private roadGroup: THREE.Group = new THREE.Group();
   private intersectionGroup: THREE.Group = new THREE.Group();
@@ -94,6 +97,9 @@ export class ThreeRenderer {
 
     this.trafficLightRenderer = new TrafficLightRenderer();
     this.scene.add(this.trafficLightRenderer.group);
+
+    this.vehicleRenderer = new VehicleRenderer();
+    this.scene.add(this.vehicleRenderer.group);
 
     this.initControls(container);
     this.updateCameraPosition();
@@ -185,6 +191,7 @@ export class ThreeRenderer {
     this.clearGroup(this.intersectionGroup);
     this.clearGroup(this.sidewalkGroup);
     this.clearGroup(this.markingGroup);
+    this.vehicleRenderer.clear();
 
     // 2. Routes (Asphalte)
     for (const road of network.roads.values()) {
@@ -272,6 +279,10 @@ export class ThreeRenderer {
 
   updateTrafficLights(trafficLights: TrafficLightEngine): void {
     this.trafficLightRenderer.updateLights(trafficLights.poles);
+  }
+
+  updateTraffic(traffic: TrafficSimulation): void {
+    this.vehicleRenderer.update(traffic.vehicles);
   }
 
   private clearGroup(group: THREE.Group): void {

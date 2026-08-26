@@ -12,22 +12,22 @@ export class LaneBuilder {
     let laneCounter = 1;
     let connCounter = 1;
 
-    // 1. Générer les voies le long des routes
+    // 1. Générer les voies le long des routes (orientées dans leur vrai sens de circulation)
     for (const road of network.roads.values()) {
       road.laneIds = [];
       const laneCount = road.profile.laneCount;
       const laneWidth = road.profile.laneWidth;
 
       if (laneCount === 1) {
-        // 1 voie simple sens direct
+        // 1 voie simple sens direct (t=0 -> t=1)
         const id = `L_${laneCounter++}`;
         const lane = new Lane(id, road.id, 1, 'forward', laneWidth, road.centerline.clone(), road.profile.speedLimitKmH);
         network.lanes.set(id, lane);
         road.laneIds.push(id);
       } else if (laneCount === 2) {
-        // 2 voies : 1 sens inverse (+width/2), 1 sens direct (-width/2)
+        // 2 voies : 1 sens inverse (+width/2, inversée t=0 -> t=1 dans le sens de retour), 1 sens direct (-width/2)
         const idBack = `L_${laneCounter++}`;
-        const backCurve = CurveOffset.offsetCurve(road.centerline, laneWidth / 2);
+        const backCurve = CurveOffset.offsetCurve(road.centerline, laneWidth / 2).reversed();
         const laneBack = new Lane(idBack, road.id, -1, 'backward', laneWidth, backCurve, road.profile.speedLimitKmH);
         network.lanes.set(idBack, laneBack);
         road.laneIds.push(idBack);
@@ -48,7 +48,10 @@ export class LaneBuilder {
 
         for (const item of offsets) {
           const id = `L_${laneCounter++}`;
-          const curve = CurveOffset.offsetCurve(road.centerline, item.offset);
+          let curve = CurveOffset.offsetCurve(road.centerline, item.offset);
+          if (item.dir === 'backward') {
+            curve = curve.reversed();
+          }
           const lane = new Lane(id, road.id, item.index, item.dir, laneWidth, curve, road.profile.speedLimitKmH);
           network.lanes.set(id, lane);
           road.laneIds.push(id);
@@ -64,32 +67,21 @@ export class LaneBuilder {
       for (const inLane of incoming) {
         for (const outLane of outgoing) {
           if (inLane.parentRoadId === outLane.parentRoadId && outgoing.length > 1) {
-            continue;
+            continue; // Pas de demi-tour sur le même carrefour si d'autres sorties existent
           }
 
           const inRoad = network.roads.get(inLane.parentRoadId);
           const outRoad = network.roads.get(outLane.parentRoadId);
           if (!inRoad || !outRoad) continue;
 
-          // Point et tangente d'arrivée de inLane au carrefour
-          const pStart = inLane.direction === 'forward'
-            ? inLane.centerline.getPoint(1)
-            : inLane.centerline.getPoint(0);
+          // Chaque voie étant orientée de son entrée (t=0) vers sa sortie (t=1) :
+          const pStart = inLane.centerline.getPoint(1);
+          const tStart = inLane.centerline.getTangent(1);
 
-          const tStart = inLane.direction === 'forward'
-            ? inLane.centerline.getTangent(1)
-            : inLane.centerline.getTangent(0).multiplyScalar(-1);
+          const pEnd = outLane.centerline.getPoint(0);
+          const tEnd = outLane.centerline.getTangent(0);
 
-          // Point et tangente de départ de outLane depuis le carrefour
-          const pEnd = outLane.direction === 'forward'
-            ? outLane.centerline.getPoint(0)
-            : outLane.centerline.getPoint(1);
-
-          const tEnd = outLane.direction === 'forward'
-            ? outLane.centerline.getTangent(0)
-            : outLane.centerline.getTangent(1).multiplyScalar(-1);
-
-          // Classification du mouvement selon la variation d'angle (inTangent vs outTangent)
+          // Classification du mouvement selon la variation d'angle
           const angleIn = Math.atan2(tStart.y, tStart.x);
           const angleOut = Math.atan2(tEnd.y, tEnd.x);
           let deltaAngle = angleOut - angleIn;
@@ -111,7 +103,14 @@ export class LaneBuilder {
           const cp1 = pStart.addScaled(tStart, handleLen);
           const cp2 = pEnd.addScaled(tEnd, -handleLen);
 
-          const trajectory = new CubicBezierCurve(pStart, cp1, cp2, pEnd);
+          const trajectory = new CubicBezierCurve(
+            pStart,
+            cp1,
+            cp2,
+            pEnd,
+            inLane.centerline.endElevation,
+            outLane.centerline.startElevation
+          );
 
           const connId = `LC_${connCounter++}`;
           const connection: LaneConnection = {

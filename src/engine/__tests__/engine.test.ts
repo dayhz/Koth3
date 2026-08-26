@@ -41,10 +41,18 @@ describe('RoadWorldEngine & Graph Intelligence', () => {
     const lanes = engine.network.getLanesForRoad(road.id);
     expect(lanes.length).toBe(2);
 
-    const laneEnds = engine.network.whereDoesLaneStartAndEnd(lanes[0].id);
-    expect(laneEnds).not.toBeNull();
-    expect(laneEnds?.startPoint.x).toBeCloseTo(0);
-    expect(laneEnds?.endPoint.x).toBeCloseTo(100);
+    const fwdLane = lanes.find((l) => l.direction === 'forward')!;
+    const backLane = lanes.find((l) => l.direction === 'backward')!;
+
+    const fwdEnds = engine.network.whereDoesLaneStartAndEnd(fwdLane.id);
+    expect(fwdEnds).not.toBeNull();
+    expect(fwdEnds?.startPoint.x).toBeCloseTo(0);
+    expect(fwdEnds?.endPoint.x).toBeCloseTo(100);
+
+    const backEnds = engine.network.whereDoesLaneStartAndEnd(backLane.id);
+    expect(backEnds).not.toBeNull();
+    expect(backEnds?.startPoint.x).toBeCloseTo(100);
+    expect(backEnds?.endPoint.x).toBeCloseTo(0);
 
     const report = WorldValidator.validate(engine.network);
     expect(report.isValid).toBe(true);

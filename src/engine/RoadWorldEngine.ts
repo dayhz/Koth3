@@ -7,12 +7,14 @@ import { MarkingBuilder } from './MarkingBuilder';
 import { TrafficRegulationEngine } from './regulation/TrafficRegulationEngine';
 import { TrafficLightEngine } from './traffic-lights/TrafficLightEngine';
 import { ElevationEngine } from './elevation/ElevationEngine';
+import { TrafficSimulation } from './traffic/TrafficSimulation';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
   public elevation: ElevationEngine;
   public regulation: TrafficRegulationEngine;
   public trafficLights: TrafficLightEngine;
+  public traffic: TrafficSimulation;
   public seed: number;
 
   constructor(seed: number = 482915) {
@@ -21,6 +23,7 @@ export class RoadWorldEngine {
     this.elevation = new ElevationEngine(this.network);
     this.regulation = new TrafficRegulationEngine(this.network);
     this.trafficLights = new TrafficLightEngine(this.network);
+    this.traffic = new TrafficSimulation(this.network, this.trafficLights, this.regulation);
   }
 
   /**
@@ -50,10 +53,14 @@ export class RoadWorldEngine {
 
     // 7. Feux tricolores dynamiques
     this.trafficLights.build();
+
+    // 8. Réinitialiser la simulation de trafic
+    this.traffic.clear();
   }
 
   update(deltaSeconds: number): void {
     this.trafficLights.update(deltaSeconds);
+    this.traffic.update(deltaSeconds);
   }
 
   getStats() {
@@ -69,6 +76,7 @@ export class RoadWorldEngine {
       arrowsCount: this.network.directionalArrows.size,
       rulesCount: this.regulation.priorityRules.size,
       trafficLightsCount: this.trafficLights.poles.size,
+      vehiclesCount: this.traffic.vehicles.size,
     };
   }
 }

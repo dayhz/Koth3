@@ -97,9 +97,8 @@ export class MarkingBuilder {
             : lane.direction === 'forward';
 
           if (isIncoming) {
-            const tEntry = arm.isStartOfRoad ? road.tStart : road.tEnd;
-            const entryPt = lane.centerline.getPoint(tEntry);
-            const tangent = lane.centerline.getTangent(tEntry);
+            const entryPt = lane.centerline.getPoint(1);
+            const tangent = lane.centerline.getTangent(1);
             const normal = tangent.normalLeft();
             const halfLaneW = lane.width / 2;
 
@@ -109,7 +108,7 @@ export class MarkingBuilder {
 
             const isRoundabout = node.type === 'roundabout';
             const stopLineId = `SL_${stopLineCounter++}`;
-            const stopLineElevation = road.centerline.getElevation(tEntry);
+            const stopLineElevation = lane.centerline.getElevation(1);
             network.stopLines.set(stopLineId, {
               id: stopLineId,
               laneId: lane.id,
@@ -123,11 +122,12 @@ export class MarkingBuilder {
 
             // B. Flèche directionnelle (positionnée ~8m avant la ligne d'arrêt)
             const arrowDistMeters = 8.0;
-            const deltaT = road.length > 0 ? (arrowDistMeters / road.length) * (arm.isStartOfRoad ? 1 : -1) : 0;
-            const tArrow = Math.max(0.05, Math.min(0.95, tEntry + deltaT));
+            const laneLen = Math.max(1, lane.centerline.getLength());
+            const deltaT = arrowDistMeters / laneLen;
+            const tArrow = Math.max(0.05, 1 - deltaT);
             const arrowPos = lane.centerline.getPoint(tArrow);
-            const arrowElevation = road.centerline.getElevation(tArrow);
-            const arrowDir = lane.direction === 'forward' ? tangent : tangent.multiplyScalar(-1);
+            const arrowElevation = lane.centerline.getElevation(tArrow);
+            const arrowDir = tangent;
 
             // Déduire le mouvement à partir des connexions de voie de ce carrefour
             let movement: LaneAllowedMovement = 'straight';
