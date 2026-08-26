@@ -97,9 +97,21 @@
         <div class="top-overlay">
           <button class="action-btn" id="btn-view-top">Vue Du Dessus (2D)</button>
           <button class="action-btn" id="btn-view-orbit">Vue 3D Orbitale</button>
+          <button class="action-btn" id="btn-toggle-editor">🛠️ Mode Éditeur (Sandbox)</button>
           <button class="action-btn" id="btn-open-export" style="background: rgba(88, 166, 255, 0.25); border-color: var(--accent-blue);">📦 Exporter Réseau</button>
           <button class="action-btn" id="btn-export-json">JSON</button>
           <button class="action-btn" id="btn-import-json">Importer</button>
+        </div>
+
+        <!-- PALETTE OUTILS ÉDITEUR -->
+        <div class="editor-palette" id="editor-palette" style="display: none;">
+          <div class="palette-title">Outils de Voirie</div>
+          <button class="tool-btn active" data-tool="road_2lane">🛣️ Route Standard (2 Voies)</button>
+          <button class="tool-btn" data-tool="road_avenue">🚗 Avenue (4 Voies)</button>
+          <button class="tool-btn" data-tool="road_residential">🏡 Voie Résidentielle</button>
+          <button class="tool-btn" data-tool="roundabout">🔄 Poser Giratoire</button>
+          <button class="tool-btn" data-tool="traffic_light">🚦 Réguler par Feux</button>
+          <button class="tool-btn" data-tool="delete" style="color: var(--accent-red);">🗑️ Supprimer Nœud</button>
         </div>
       </main>
     </div>

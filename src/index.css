@@ -288,6 +288,66 @@ body {
   border-color: var(--accent-blue);
 }
 
+.action-btn.active {
+  background: rgba(63, 185, 80, 0.25);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+/* EDITOR PALETTE */
+.editor-palette {
+  position: absolute;
+  top: 70px;
+  right: 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  min-width: 180px;
+}
+
+.palette-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.tool-btn {
+  background: #0d1117;
+  border: 1px solid var(--border);
+  color: #c9d1d9;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s;
+}
+
+.tool-btn:hover {
+  border-color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.tool-btn.active {
+  background: rgba(88, 166, 255, 0.25);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+
 /* MODAL JSON */
 .modal-backdrop {
   position: fixed;

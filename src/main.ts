@@ -3,10 +3,12 @@ import { TEST_SCENARIOS, TestScenario } from './test-lab/TestLabScenarios';
 import { RoadWorldEngine } from './engine/RoadWorldEngine';
 import { WorldValidator } from './validation/WorldValidator';
 import { WorldSerializer } from './serialization/WorldSerializer';
+import { RoadWorldEditor, EditorTool } from './editor/RoadWorldEditor';
 
 class App {
   private renderer!: ThreeRenderer;
   private currentEngine!: RoadWorldEngine;
+  private editor!: RoadWorldEditor;
   private lastTime: number = performance.now();
   public isSimulationPaused: boolean = false;
 
@@ -20,11 +22,29 @@ class App {
 
     this.renderer = new ThreeRenderer(container);
 
+    // Initialiser l'éditeur interactif Sandbox
+    this.editor = new RoadWorldEditor(
+      new RoadWorldEngine(1),
+      this.renderer.camera,
+      this.renderer.renderer.domElement,
+      () => {
+        // Re-rendre le monde quand l'utilisateur pose une route
+        this.renderer.renderWorld(
+          this.currentEngine.network,
+          this.currentEngine.regulation,
+          this.currentEngine.trafficLights
+        );
+        this.updateStats();
+        this.updateValidationReport();
+      }
+    );
+
     this.setupScenarioList();
     this.setupDebugToggles();
     this.setupCameraControls();
     this.setupJsonModal();
     this.setupExportModal();
+    this.setupEditorControls();
 
     // Charger le scénario par défaut (TEST-01)
     this.loadScenario(0);
@@ -85,6 +105,8 @@ class App {
 
     // Instancier le moteur et construire la scène
     this.currentEngine = scenario.createEngine();
+    this.editor.setEngine(this.currentEngine);
+
     this.renderer.renderWorld(
       this.currentEngine.network,
       this.currentEngine.regulation,
@@ -94,6 +116,36 @@ class App {
 
     this.updateStats();
     this.updateValidationReport();
+  }
+
+  private setupEditorControls(): void {
+    const toggleBtn = document.getElementById('btn-toggle-editor');
+    const palette = document.getElementById('editor-palette')!;
+    const toolBtns = document.querySelectorAll('.tool-btn');
+
+    toggleBtn?.addEventListener('click', () => {
+      this.editor.isEditorActive = !this.editor.isEditorActive;
+      if (this.editor.isEditorActive) {
+        toggleBtn.classList.add('active');
+        palette.style.display = 'flex';
+      } else {
+        toggleBtn.classList.remove('active');
+        palette.style.display = 'none';
+        this.editor.clearSelection();
+      }
+    });
+
+    toolBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toolBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tool = btn.getAttribute('data-tool') as EditorTool;
+        if (tool) {
+          this.editor.activeTool = tool;
+          this.editor.clearSelection();
+        }
+      });
+    });
   }
 
   private updateStats(): void {

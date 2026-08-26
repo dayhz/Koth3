@@ -3,6 +3,7 @@ import { LinearCurve, CubicBezierCurve } from '../core/curves/Curve';
 import { RoadWorldEngine } from '../engine/RoadWorldEngine';
 import { RoadProfile } from '../engine/types';
 import { CityBuilder } from '../engine/procedural/CityBuilder';
+import { OrganicCityGenerator } from '../engine/procedural/OrganicCityGenerator';
 
 export interface TestScenario {
   id: string;
@@ -390,6 +391,67 @@ export const TEST_SCENARIOS: TestScenario[] = [
       engine.build();
       engine.traffic.config.maxVehicles = 25;
       engine.traffic.config.spawnIntervalSeconds = 1.2;
+      return engine;
+    },
+  },
+  {
+    id: 'TEST-19',
+    name: 'Mégalopole Procédurale Unifiée V1.0 (Radial, Organique, Viaducs & Grille)',
+    category: 'Version Finale V1.0',
+    description: 'Chef-d’œuvre 100% procédural combinant tous les générateurs d’algorithmes : Cœur radial à anneaux concentriques en arcs de cercle (TEST-16), Quartier historique organique en courbes de Bézier arborescentes (TEST-15), Viaduc autoroutier surélevé à +14m (TEST-11/12), et 80 véhicules autonomes IDM (TEST-17/18).',
+    expectedResult: 'Une immense métropole 3D générée purement par algorithmes mathématiques où le trafic circule de manière fluide et autonome.',
+    createEngine: () => {
+      const engine = new RoadWorldEngine(119);
+      const net = engine.network;
+
+      // =========================================================================
+      // 1. GÉNÉRATION PROCÉDURALE DU CŒUR RADIAL & GIRATOIRE (TEST-16 RadialCityGenerator)
+      // =========================================================================
+      CityBuilder.createRadialCity(engine, {
+        centerRadius: 24,
+        ringRadii: [80, 160],
+        spokesCount: 6,
+        majorProfile: fourLaneAvenueProfile,
+        minorProfile: defaultResidentialProfile,
+      });
+
+      // =========================================================================
+      // 2. GÉNÉRATION PROCÉDURALE DU QUARTIER HISTORIQUE ORGANIQUE (TEST-15 OrganicCityGenerator)
+      // =========================================================================
+      OrganicCityGenerator.generate(
+        net,
+        {
+          boundsWidth: 200,
+          boundsHeight: 200,
+          mainArteriesCount: 4,
+          branchesPerArtery: 3,
+          curviness: 0.75,
+          snapDistance: 25,
+          majorProfile: fourLaneAvenueProfile,
+          minorProfile: defaultResidentialProfile,
+        },
+        777
+      );
+
+      // =========================================================================
+      // 3. BOUCLE AUTOROUTIÈRE EN VIADUC SURÉLEVÉ À +14M (TEST-11/12 Elevation)
+      // =========================================================================
+      const viaEntry = net.createNode(new Vector2D(-180, 100), 'dead_end', 'Viaduc Entrée (+0m)', 0);
+      const viaBridge1 = net.createNode(new Vector2D(-240, 0), 'dead_end', 'Viaduc Pont Supérieur (+14m)', 14);
+      const viaBridge2 = net.createNode(new Vector2D(-180, -100), 'dead_end', 'Viaduc Sortie (+0m)', 0);
+
+      net.createRoad(viaEntry.id, viaBridge1.id, new LinearCurve(viaEntry.position, viaBridge1.position, 0, 14), fourLaneAvenueProfile, 'VIADUC_RAMPE_MONTEE');
+      net.createRoad(viaBridge1.id, viaBridge2.id, new LinearCurve(viaBridge1.position, viaBridge2.position, 14, 0), fourLaneAvenueProfile, 'VIADUC_RAMPE_DESCENTE');
+
+      // =========================================================================
+      // 4. CONSTRUCTION, SIGNALISATION & SIMULATION AUTONOME IDM (V0.3 à V0.8)
+      // =========================================================================
+      engine.build();
+
+      // Flotte dense de 80 véhicules autonomes circulant en continu
+      engine.traffic.config.maxVehicles = 80;
+      engine.traffic.config.spawnIntervalSeconds = 0.6;
+
       return engine;
     },
   },
