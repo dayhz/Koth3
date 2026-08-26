@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Road World Engine V0.1 — Test Lab & Géométrie Routière</title>
+    <link rel="stylesheet" href="./src/index.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="header">
+          <h1>
+            <span>🛣️</span> ROAD WORLD ENGINE
+          </h1>
+          <span class="badge">V0.1 STABLE</span>
+        </div>
+
+        <!-- SCÉNARIOS DU TEST LAB -->
+        <div class="section">
+          <div class="section-title">
+            <span>Banc de Tests (10 Scénarios)</span>
+          </div>
+          <div class="scenario-list" id="scenario-list"></div>
+        </div>
+
+        <!-- STATISTIQUES MONDE -->
+        <div class="section">
+          <div class="section-title">
+            <span>Statistiques du Réseau</span>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-value" id="stat-nodes">0</div>
+              <div class="stat-label">Nœuds</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-roads">0</div>
+              <div class="stat-label">Routes</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-lanes">0</div>
+              <div class="stat-label">Voies</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-sidewalks">0</div>
+              <div class="stat-label">Trottoirs</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-markings">0</div>
+              <div class="stat-label">Marquages</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-value" id="stat-connections">0</div>
+              <div class="stat-label">Connexions</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTRÔLES DEBUG -->
+        <div class="section">
+          <div class="section-title">
+            <span>Overlays de Débogage</span>
+          </div>
+          <div class="toggle-grid">
+            <button class="toggle-btn active" id="toggle-centerlines">
+              <span>Lignes d'Axe</span>
+              <span class="indicator">●</span>
+            </button>
+            <button class="toggle-btn active" id="toggle-lanes">
+              <span>Voies (Lanes)</span>
+              <span class="indicator">●</span>
+            </button>
+            <button class="toggle-btn active" id="toggle-nodes">
+              <span>Nœuds</span>
+              <span class="indicator">●</span>
+            </button>
+            <button class="toggle-btn active" id="toggle-intersections">
+              <span>Carrefours</span>
+              <span class="indicator">●</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RAPPORT DE VALIDATION -->
+        <div class="section">
+          <div class="section-title">
+            <span>Validation Automatique</span>
+          </div>
+          <div id="validation-report-container"></div>
+        </div>
+      </aside>
+
+      <!-- VIEWPORT 3D -->
+      <main id="viewport-container">
+        <div class="top-overlay">
+          <button class="action-btn" id="btn-view-top">Vue Du Dessus (2D)</button>
+          <button class="action-btn" id="btn-view-orbit">Vue 3D Orbitale</button>
+          <button class="action-btn" id="btn-export-json">Exporter JSON</button>
+          <button class="action-btn" id="btn-import-json">Importer JSON</button>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODAL JSON -->
+    <div class="modal-backdrop" id="json-modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title">Sérialisation JSON</h3>
+          <button class="action-btn" id="modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <textarea class="json-textarea" id="json-text"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="action-btn" id="modal-action-btn">Valider</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
