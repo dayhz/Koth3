@@ -8,6 +8,7 @@ import { TrafficRegulationEngine } from './regulation/TrafficRegulationEngine';
 import { TrafficLightEngine } from './traffic-lights/TrafficLightEngine';
 import { ElevationEngine } from './elevation/ElevationEngine';
 import { TrafficSimulation } from './traffic/TrafficSimulation';
+import { ExportHub } from './export/ExportHub';
 
 export class RoadWorldEngine {
   public network: RoadNetwork;
@@ -79,4 +80,22 @@ export class RoadWorldEngine {
       vehiclesCount: this.traffic.vehicles.size,
     };
   }
+
+  // --- Exportateurs V0.9 ---
+  exportOpenDrive(): string {
+    return ExportHub.exportToOpenDrive(this);
+  }
+
+  exportSumo(): string {
+    return ExportHub.exportToSumo(this);
+  }
+
+  exportGeoJson(): string {
+    return ExportHub.exportToGeoJson(this);
+  }
+
+  exportObj() {
+    return ExportHub.exportToObj(this);
+  }
 }
+

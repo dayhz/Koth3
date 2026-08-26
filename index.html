@@ -97,10 +97,60 @@
         <div class="top-overlay">
           <button class="action-btn" id="btn-view-top">Vue Du Dessus (2D)</button>
           <button class="action-btn" id="btn-view-orbit">Vue 3D Orbitale</button>
-          <button class="action-btn" id="btn-export-json">Exporter JSON</button>
-          <button class="action-btn" id="btn-import-json">Importer JSON</button>
+          <button class="action-btn" id="btn-open-export" style="background: rgba(88, 166, 255, 0.25); border-color: var(--accent-blue);">📦 Exporter Réseau</button>
+          <button class="action-btn" id="btn-export-json">JSON</button>
+          <button class="action-btn" id="btn-import-json">Importer</button>
         </div>
       </main>
+    </div>
+
+    <!-- MODAL EXPORT MULTI-FORMATS V0.9 -->
+    <div class="modal-backdrop" id="export-modal" style="display: none;">
+      <div class="modal-content" style="width: 750px;">
+        <div class="modal-header">
+          <h3>📦 Exportation Professionnelle du Réseau Routier</h3>
+          <button class="action-btn" id="export-modal-close">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+            Exportez votre réseau routier 3D dans les formats standardisés de l'industrie pour les simulateurs de conduite autonome, de trafic ou les moteurs 3D.
+          </p>
+
+          <div class="export-grid">
+            <div class="export-card">
+              <div>
+                <div class="export-card-title">🚗 ASAM OpenDRIVE (.xodr)</div>
+                <div class="export-card-desc">Format standard pour simulateurs de conduite autonome (CARLA, Apollo, BeamNG, VIRES VTD).</div>
+              </div>
+              <button class="btn-download" id="dl-opendrive">📥 Télécharger OpenDRIVE</button>
+            </div>
+
+            <div class="export-card">
+              <div>
+                <div class="export-card-title">🚦 Eclipse SUMO (.net.xml)</div>
+                <div class="export-card-desc">Réseau de trafic microscopique pour le simulateur open source SUMO avec feux tricolores et priorités.</div>
+              </div>
+              <button class="btn-download" id="dl-sumo">📥 Télécharger SUMO .net.xml</button>
+            </div>
+
+            <div class="export-card">
+              <div>
+                <div class="export-card-title">🗺️ GeoJSON GIS (.geojson)</div>
+                <div class="export-card-desc">Format géospatial universel multi-couches pour QGIS, ArcGIS, Mapbox et analyse cartographique.</div>
+              </div>
+              <button class="btn-download" id="dl-geojson">📥 Télécharger GeoJSON</button>
+            </div>
+
+            <div class="export-card">
+              <div>
+                <div class="export-card-title">🎨 Modèle 3D Wavefront (.obj + .mtl)</div>
+                <div class="export-card-desc">Maillage surfacique triangulé 3D avec matériaux PBR pour Blender, Unreal Engine 5 et Unity.</div>
+              </div>
+              <button class="btn-download" id="dl-obj">📥 Télécharger Modèle 3D (OBJ)</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL JSON -->

@@ -24,6 +24,7 @@ class App {
     this.setupDebugToggles();
     this.setupCameraControls();
     this.setupJsonModal();
+    this.setupExportModal();
 
     // Charger le scénario par défaut (TEST-01)
     this.loadScenario(0);
@@ -243,6 +244,53 @@ class App {
           actionBtn.textContent = 'Copier dans le Presse-papier';
         }, 2000);
       }
+    });
+  }
+
+  private setupExportModal(): void {
+    const modal = document.getElementById('export-modal')!;
+    const closeBtn = document.getElementById('export-modal-close')!;
+    const openBtn = document.getElementById('btn-open-export')!;
+
+    openBtn?.addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+
+    closeBtn?.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    const downloadFile = (filename: string, content: string, mimeType: string) => {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    document.getElementById('dl-opendrive')?.addEventListener('click', () => {
+      const xml = this.currentEngine.exportOpenDrive();
+      downloadFile('road_world.xodr', xml, 'application/xml');
+    });
+
+    document.getElementById('dl-sumo')?.addEventListener('click', () => {
+      const xml = this.currentEngine.exportSumo();
+      downloadFile('road_world.net.xml', xml, 'application/xml');
+    });
+
+    document.getElementById('dl-geojson')?.addEventListener('click', () => {
+      const geojson = this.currentEngine.exportGeoJson();
+      downloadFile('road_world.geojson', geojson, 'application/geo+json');
+    });
+
+    document.getElementById('dl-obj')?.addEventListener('click', () => {
+      const { obj, mtl } = this.currentEngine.exportObj();
+      downloadFile('road_world.obj', obj, 'text/plain');
+      setTimeout(() => {
+        downloadFile('road_world.mtl', mtl, 'text/plain');
+      }, 300);
     });
   }
 }
