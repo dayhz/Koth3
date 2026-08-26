@@ -426,16 +426,20 @@ export const TEST_SCENARIOS: TestScenario[] = [
       net.createRoad(viaW.id, viaS.id, new LinearCurve(viaW.position, viaS.position, 15, 15), fourLaneAvenueProfile, 'VIADUC_TABLIER_2');
       net.createRoad(viaS.id, rndS.id, new LinearCurve(viaS.position, rndS.position, 15, 0), fourLaneAvenueProfile, 'RAMPE_VIADUC_SUD');
 
-      // Avenue transversale au sol (0m) passant DIRECTEMENT sous le tablier du viaduc
-      const underpassW = net.createNode(new Vector2D(-240, 0), 'dead_end', 'Avenue Sous Pont Ouest', 0);
-      net.createRoad(rndC.id, underpassW.id, new LinearCurve(rndC.position, underpassW.position, 0, 0), fourLaneAvenueProfile, 'AVENUE_SOUS_VIADUC');
+      // Avenue transversale au sol (0m) passant DIRECTEMENT sous le tablier du viaduc et bouclant vers le Sud
+      const underpassW = net.createNode(new Vector2D(-240, 0), 't_junction', 'Avenue Sous Pont Ouest', 0);
+      const underpassLoopS = net.createNode(new Vector2D(-200, -130), 't_junction', 'Boucle Ouest Sud', 0);
+
+      net.createRoad(rndC.id, underpassW.id, new LinearCurve(rndC.position, underpassW.position, 0, 0), fourLaneAvenueProfile, 'AVENUE_SOUS_VIADUC_1');
+      net.createRoad(underpassW.id, underpassLoopS.id, new CubicBezierCurve(underpassW.position, new Vector2D(-250, -70), new Vector2D(-240, -110), underpassLoopS.position), fourLaneAvenueProfile, 'AVENUE_SOUS_VIADUC_2');
+      net.createRoad(underpassLoopS.id, rndS.id, new LinearCurve(underpassLoopS.position, rndS.position, 0, 0), fourLaneAvenueProfile, 'AVENUE_SOUS_VIADUC_3');
 
       // =========================================================================
       // 3. QUARTIER HISTORIQUE ORGANIQUE EN BÉZIERS & BIFURCATION EN Y (V0.1, V0.2, V0.7)
       // =========================================================================
       const forkY = net.createNode(new Vector2D(90, 240), 't_junction', 'Bifurcation en Y Historique');
-      const orgBranch1 = net.createNode(new Vector2D(180, 270), 'dead_end', 'Belvédère Nord');
-      const orgBranch2 = net.createNode(new Vector2D(180, 200), 'four_way', 'Porte Nord-Est');
+      const orgBranch1 = net.createNode(new Vector2D(180, 270), 't_junction', 'Place Haute Nord-Est');
+      const orgBranch2 = net.createNode(new Vector2D(180, 170), 'four_way', 'Porte Nord-Est');
 
       // Grande courbe de Bézier sinueuse reliant le Giratoire Nord à la bifurcation en Y
       const curveOrganicMain = new CubicBezierCurve(
@@ -454,13 +458,22 @@ export const TEST_SCENARIOS: TestScenario[] = [
       const curveFork2 = new CubicBezierCurve(
         forkY.position,
         new Vector2D(120, 220),
-        new Vector2D(150, 205),
+        new Vector2D(150, 190),
+        orgBranch2.position
+      );
+
+      // Reconnexion de la branche haute orgBranch1 vers orgBranch2 pour boucler le quartier Nord
+      const curveLoopNorth = new CubicBezierCurve(
+        orgBranch1.position,
+        new Vector2D(220, 260),
+        new Vector2D(220, 200),
         orgBranch2.position
       );
 
       net.createRoad(rndN.id, forkY.id, curveOrganicMain, defaultResidentialProfile, 'ART_ORGANIC_MAIN');
       net.createRoad(forkY.id, orgBranch1.id, curveFork1, defaultResidentialProfile, 'BRANCHE_Y_1');
       net.createRoad(forkY.id, orgBranch2.id, curveFork2, defaultResidentialProfile, 'BRANCHE_Y_2');
+      net.createRoad(orgBranch1.id, orgBranch2.id, curveLoopNorth, defaultResidentialProfile, 'BOUCLE_NORD_EST');
 
       // =========================================================================
       // 4. COL DE MONTAGNE EN LACETS SINUEUX EN S À +14M AVEC DÉVERS (V0.6)

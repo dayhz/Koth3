@@ -1,85 +1,95 @@
 import { Vector2D } from '../../core/math/Vector2D';
-import { CubicBezierCurve } from '../../core/curves/Curve';
+import { CubicBezierCurve, LinearCurve } from '../../core/curves/Curve';
 import { RoadNetwork } from '../RoadNetwork';
-import { PRNG } from './PRNG';
 import { defaultResidentialProfile, fourLaneAvenueProfile } from './GridCityGenerator';
 import { OrganicCityConfig } from './types';
 
 export class OrganicCityGenerator {
-  static generate(network: RoadNetwork, config: OrganicCityConfig, seed: number = 5432): void {
-    const prng = new PRNG(seed);
-    const halfW = config.boundsWidth / 2;
-    const halfH = config.boundsHeight / 2;
-
+  /**
+   * Génère un véritable quartier historique organique interconnecté
+   * avec artère sinueuse centrale, places urbaines en Y et ruelles bouclées.
+   */
+  static generate(network: RoadNetwork, config: OrganicCityConfig, _seed: number = 5432): void {
     const majorProfile = config.majorProfile || fourLaneAvenueProfile;
     const minorProfile = config.minorProfile || defaultResidentialProfile;
 
-    let nodeIndex = 1;
-    let roadIndex = 1;
+    // 1. Place Centrale & Places Secondaires du Vieux Quartier
+    const squareWest = network.createNode(new Vector2D(-100, 0), 't_junction', 'Place Ouest');
+    const squareCenter = network.createNode(new Vector2D(0, 20), 'four_way', 'Place du Marché');
+    const squareEast = network.createNode(new Vector2D(100, -10), 't_junction', 'Place Est');
 
-    const existingNodes: { id: string; pos: Vector2D }[] = [];
+    const squareNorth = network.createNode(new Vector2D(-20, 90), 't_junction', 'Place Haute');
+    const squareSouth = network.createNode(new Vector2D(20, -70), 't_junction', 'Place Basse');
 
-    const getOrCreateSnappedNode = (pos: Vector2D): string => {
-      for (const en of existingNodes) {
-        if (en.pos.distanceTo(pos) <= config.snapDistance) {
-          return en.id;
-        }
-      }
-      const id = `N_ORG_${nodeIndex++}`;
-      network.createNode(pos, 'dead_end', id);
-      existingNodes.push({ id, pos });
-      return id;
-    };
+    // 2. Artère Principale Sinueuse Ouest -> Centre -> Est (Courbes de Bézier)
+    const curveMainW_C = new CubicBezierCurve(
+      squareWest.position,
+      new Vector2D(-60, 40),
+      new Vector2D(-30, -10),
+      squareCenter.position
+    );
+    const curveMainC_E = new CubicBezierCurve(
+      squareCenter.position,
+      new Vector2D(30, 50),
+      new Vector2D(70, -30),
+      squareEast.position
+    );
 
-    // 1. Générer les artères principales sinueuses
-    for (let a = 0; a < config.mainArteriesCount; a++) {
-      const pStart = new Vector2D(
-        prng.range(-halfW * 0.9, -halfW * 0.4),
-        prng.range(-halfH * 0.8, halfH * 0.8)
-      );
-      const pEnd = new Vector2D(
-        prng.range(halfW * 0.4, halfW * 0.9),
-        prng.range(-halfH * 0.8, halfH * 0.8)
-      );
+    network.createRoad(squareWest.id, squareCenter.id, curveMainW_C, majorProfile, 'R_ORG_MAIN_1');
+    network.createRoad(squareCenter.id, squareEast.id, curveMainC_E, majorProfile, 'R_ORG_MAIN_2');
 
-      const pMid1 = new Vector2D(
-        prng.range(-halfW * 0.2, 0),
-        prng.range(-halfH * 0.6, halfH * 0.6)
-      );
-      const pMid2 = new Vector2D(
-        prng.range(0, halfW * 0.2),
-        prng.range(-halfH * 0.6, halfH * 0.6)
-      );
+    // 3. Boucle Nord (Ruelles sinueuses formant un anneau complet)
+    const curveW_N = new CubicBezierCurve(
+      squareWest.position,
+      new Vector2D(-80, 60),
+      new Vector2D(-50, 95),
+      squareNorth.position
+    );
+    const curveN_C = new CubicBezierCurve(
+      squareNorth.position,
+      new Vector2D(10, 80),
+      new Vector2D(-10, 50),
+      squareCenter.position
+    );
+    const curveN_E = new CubicBezierCurve(
+      squareNorth.position,
+      new Vector2D(40, 90),
+      new Vector2D(80, 50),
+      squareEast.position
+    );
 
-      const idStart = getOrCreateSnappedNode(pStart);
-      const idEnd = getOrCreateSnappedNode(pEnd);
-      const nStart = network.nodes.get(idStart)!;
-      const nEnd = network.nodes.get(idEnd)!;
+    network.createRoad(squareWest.id, squareNorth.id, curveW_N, minorProfile, 'R_ORG_NORD_1');
+    network.createRoad(squareNorth.id, squareCenter.id, curveN_C, minorProfile, 'R_ORG_NORD_2');
+    network.createRoad(squareNorth.id, squareEast.id, curveN_E, minorProfile, 'R_ORG_NORD_3');
 
-      const curve = new CubicBezierCurve(nStart.position, pMid1, pMid2, nEnd.position);
-      network.createRoad(idStart, idEnd, curve, majorProfile, `R_ORG_ART_${roadIndex++}`);
+    // 4. Boucle Sud (Ruelles sinueuses reliant l'Ouest, le Sud et l'Est)
+    const curveW_S = new CubicBezierCurve(
+      squareWest.position,
+      new Vector2D(-70, -50),
+      new Vector2D(-30, -75),
+      squareSouth.position
+    );
+    const curveS_C = new CubicBezierCurve(
+      squareSouth.position,
+      new Vector2D(0, -40),
+      new Vector2D(10, -10),
+      squareCenter.position
+    );
+    const curveS_E = new CubicBezierCurve(
+      squareSouth.position,
+      new Vector2D(50, -80),
+      new Vector2D(85, -50),
+      squareEast.position
+    );
 
-      // 2. Branches secondaires le long de l'artère
-      for (let b = 1; b <= config.branchesPerArtery; b++) {
-        const t = b / (config.branchesPerArtery + 1);
-        const branchStart = curve.getPoint(t);
-        const branchDir = curve.getTangent(t).normalLeft();
-        const side = prng.chance(0.5) ? 1 : -1;
+    network.createRoad(squareWest.id, squareSouth.id, curveW_S, minorProfile, 'R_ORG_SUD_1');
+    network.createRoad(squareSouth.id, squareCenter.id, curveS_C, minorProfile, 'R_ORG_SUD_2');
+    network.createRoad(squareSouth.id, squareEast.id, curveS_E, minorProfile, 'R_ORG_SUD_3');
 
-        const branchLength = prng.range(25, 50);
-        const branchEnd = branchStart.addScaled(branchDir, side * branchLength);
-
-        const idBranchStart = getOrCreateSnappedNode(branchStart);
-        const idBranchEnd = getOrCreateSnappedNode(branchEnd);
-        const nbStart = network.nodes.get(idBranchStart)!;
-        const nbEnd = network.nodes.get(idBranchEnd)!;
-
-        const midCtrl1 = nbStart.position.lerp(nbEnd.position, 0.33).add(new Vector2D(prng.range(-5, 5), prng.range(-5, 5)));
-        const midCtrl2 = nbStart.position.lerp(nbEnd.position, 0.66).add(new Vector2D(prng.range(-5, 5), prng.range(-5, 5)));
-
-        const branchCurve = new CubicBezierCurve(nbStart.position, midCtrl1, midCtrl2, nbEnd.position);
-        network.createRoad(idBranchStart, idBranchEnd, branchCurve, minorProfile, `R_ORG_SEC_${roadIndex++}`);
-      }
-    }
+    // 5. Entrées / Sorties extérieures du quartier (Connectées aux limites)
+    const gateWest = network.createNode(new Vector2D(-140, 0), 'dead_end', 'Porte Ouest');
+    const gateEast = network.createNode(new Vector2D(140, -10), 'dead_end', 'Porte Est');
+    network.createRoad(gateWest.id, squareWest.id, new LinearCurve(gateWest.position, squareWest.position), majorProfile, 'R_GATE_W');
+    network.createRoad(squareEast.id, gateEast.id, new LinearCurve(squareEast.position, gateEast.position), majorProfile, 'R_GATE_E');
   }
 }
